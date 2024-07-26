@@ -7,7 +7,7 @@ import requests
 import io
 
 # --- Configuration ---
-#st.set_option('server.maxUploadSize', 200)  # Set max upload size to 200MB
+st.set_option('server.maxUploadSize', 200)  # Set max upload size to 200MB
 
 # --- Functions ---
 
