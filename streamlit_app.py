@@ -114,7 +114,7 @@ if uploaded_files or dropbox_url or gdrive_url:
         avg_intra_vendor = calculate_average_rate(data["intra_vendor_rates"])
         avg_vendor = calculate_average_rate(data["vendor_rates"])
 
-        if avg_vendor <= 0.02:  # Example condition: include if avg_vendor <= 0.02
+        if avg_vendor <= 1:  # Example condition: include if avg_vendor <= 0.02
             results.append([
                 prefix,
                 data["description"],
