@@ -12,13 +12,13 @@ import io
 # --- Functions ---
 
 def calculate_average_rate(rates):
-    rates = [float(rate) for rate in rates if rate.strip() and float(rate) >= 0.0]
+    rates = [float(rate) for rate in rates if str(rate).strip() and float(rate) >= 0.0]
     if rates:
         return round(sum(rates) / len(rates), 4)
     return 0.0
 
 def calculate_average_of_cheapest(rates, n=4):
-    rates = sorted([float(rate) for rate in rates if rate.strip() and float(rate) >= 0.0])
+    rates = sorted([float(rate) for rate in rates if str(rate).strip() and float(rate) >= 0.0])
     if len(rates) >= n:
         return round(sum(rates[:n]) / n, 4)
     return calculate_average_rate(rates)
