@@ -7,7 +7,7 @@ import requests
 import io
 
 # --- Configuration ---
-#st.set_option('server.maxUploadSize', 200)  # Set max upload size to 200MB
+# st.set_option('server.maxUploadSize', 200)  # Set max upload size to 200MB
 
 # --- Functions ---
 
@@ -16,6 +16,12 @@ def calculate_average_rate(rates):
     if rates:
         return round(sum(rates) / len(rates), 4)
     return 0.0
+
+def calculate_average_of_cheapest(rates, n=4):
+    rates = sorted([float(rate) for rate in rates if rate.strip() and float(rate) >= 0.0])
+    if len(rates) >= n:
+        return round(sum(rates[:n]) / n, 4)
+    return calculate_average_rate(rates)
 
 def process_csv_data(uploaded_files, dropbox_url, gdrive_url):
     prefix_data = defaultdict(lambda: {
@@ -105,6 +111,8 @@ uploaded_files = st.file_uploader(
 dropbox_url = st.text_input("Dropbox Shared Link:")
 gdrive_url = st.text_input("Google Drive URL:")
 
+calculate_cheapest = st.checkbox("Calculate Average Rate for 4 Cheapest Vendors", value=True)
+
 if uploaded_files or dropbox_url or gdrive_url:
     prefix_data = process_csv_data(uploaded_files, dropbox_url, gdrive_url)
 
@@ -113,26 +121,36 @@ if uploaded_files or dropbox_url or gdrive_url:
         avg_inter_vendor = calculate_average_rate(data["inter_vendor_rates"])
         avg_intra_vendor = calculate_average_rate(data["intra_vendor_rates"])
         avg_vendor = calculate_average_rate(data["vendor_rates"])
+        avg_cheapest_vendor = calculate_average_of_cheapest(data["vendor_rates"]) if calculate_cheapest else None
 
-        if avg_vendor <= 1:  # Example condition: include if avg_vendor <= 0.02
-            results.append([
-                prefix,
-                data["description"],
-                avg_inter_vendor,
-                avg_intra_vendor,
-                avg_vendor,
-                data["currency"],
-                data["billing_scheme"]
-            ])
+        row = [
+            prefix,
+            data["description"],
+            avg_inter_vendor,
+            avg_intra_vendor,
+            avg_vendor,
+            data["currency"],
+            data["billing_scheme"]
+        ]
+        
+        if calculate_cheapest:
+            row.insert(5, avg_cheapest_vendor)
 
-    df = pd.DataFrame(results, columns=[
+        results.append(row)
+
+    columns = [
         "Prefix", "Description",
         "Average Rate (inter, vendor's currency)",
         "Average Rate (intra, vendor's currency)",
         "Average Rate (vendor's currency)",
         "Vendor's currency",
         "Billing scheme"
-    ])
+    ]
+
+    if calculate_cheapest:
+        columns.insert(5, "Average Rate (4 cheapest vendors)")
+
+    df = pd.DataFrame(results, columns=columns)
 
     st.dataframe(df)
 
