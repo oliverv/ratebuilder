@@ -111,49 +111,83 @@ uploaded_files = st.file_uploader(
 dropbox_url = st.text_input("Dropbox Shared Link:")
 gdrive_url = st.text_input("Google Drive URL:")
 
-calculate_cheapest = st.checkbox("Calculate Average Rate for 4 Cheapest Vendors", value=True)
+num_cheapest = st.number_input("Number of Cheapest Vendors to Average", min_value=1, value=4)
 
 if uploaded_files or dropbox_url or gdrive_url:
     prefix_data = process_csv_data(uploaded_files, dropbox_url, gdrive_url)
 
     results = []
+    cheapest_results = []
     for prefix, data in prefix_data.items():
         avg_inter_vendor = calculate_average_rate(data["inter_vendor_rates"])
         avg_intra_vendor = calculate_average_rate(data["intra_vendor_rates"])
         avg_vendor = calculate_average_rate(data["vendor_rates"])
-        avg_cheapest_vendor = calculate_average_of_cheapest(data["vendor_rates"]) if calculate_cheapest else None
 
-        row = [
+        avg_cheapest_inter_vendor = calculate_average_of_cheapest(data["inter_vendor_rates"], num_cheapest)
+        avg_cheapest_intra_vendor = calculate_average_of_cheapest(data["intra_vendor_rates"], num_cheapest)
+        avg_cheapest_vendor = calculate_average_of_cheapest(data["vendor_rates"], num_cheapest)
+
+        results.append([
             prefix,
             data["description"],
             avg_inter_vendor,
             avg_intra_vendor,
             avg_vendor,
-            avg_cheapest_vendor if calculate_cheapest else "N/A",
             data["currency"],
             data["billing_scheme"]
-        ]
+        ])
 
-        results.append(row)
+        cheapest_results.append([
+            prefix,
+            data["description"],
+            avg_cheapest_inter_vendor,
+            avg_cheapest_intra_vendor,
+            avg_cheapest_vendor,
+            data["currency"],
+            data["billing_scheme"]
+        ])
 
     columns = [
         "Prefix", "Description",
         "Average Rate (inter, vendor's currency)",
         "Average Rate (intra, vendor's currency)",
         "Average Rate (vendor's currency)",
-        "Average Rate (4 cheapest vendors)",
+        "Vendor's currency",
+        "Billing scheme"
+    ]
+
+    cheapest_columns = [
+        "Prefix", "Description",
+        f"Average Rate (inter, {num_cheapest} cheapest)",
+        f"Average Rate (intra, {num_cheapest} cheapest)",
+        f"Average Rate ({num_cheapest} cheapest vendors)",
         "Vendor's currency",
         "Billing scheme"
     ]
 
     df = pd.DataFrame(results, columns=columns)
+    df_cheapest = pd.DataFrame(cheapest_results, columns=cheapest_columns)
 
+    st.subheader("All Vendors' Average Rates")
     st.dataframe(df)
 
-    csv = df.to_csv(index=False)
+    st.subheader(f"Average Rates of {num_cheapest} Cheapest Vendors")
+    st.dataframe(df_cheapest)
+
+    csv_all = df.to_csv(index=False)
+    csv_cheapest = df_cheapest.to_csv(index=False)
+
     st.download_button(
-        label="Download data as CSV",
-        data=csv,
-        file_name='compiled_rates.csv',
+        label="Download all vendors' average rates as CSV",
+        data=csv_all,
+        file_name='all_vendors_average_rates.csv',
         mime='text/csv',
     )
+
+    st.download_button(
+        label=f"Download average rates of {num_cheapest} cheapest vendors as CSV",
+        data=csv_cheapest,
+        file_name=f'{num_cheapest}_cheapest_vendors_average_rates.csv',
+        mime='text/csv',
+    )
+    
