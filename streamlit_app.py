@@ -129,12 +129,10 @@ if uploaded_files or dropbox_url or gdrive_url:
             avg_inter_vendor,
             avg_intra_vendor,
             avg_vendor,
+            avg_cheapest_vendor if calculate_cheapest else "N/A",
             data["currency"],
             data["billing_scheme"]
         ]
-        
-        if calculate_cheapest:
-            row.insert(5, avg_cheapest_vendor)
 
         results.append(row)
 
@@ -143,12 +141,10 @@ if uploaded_files or dropbox_url or gdrive_url:
         "Average Rate (inter, vendor's currency)",
         "Average Rate (intra, vendor's currency)",
         "Average Rate (vendor's currency)",
+        "Average Rate (4 cheapest vendors)",
         "Vendor's currency",
         "Billing scheme"
     ]
-
-    if calculate_cheapest:
-        columns.insert(5, "Average Rate (4 cheapest vendors)")
 
     df = pd.DataFrame(results, columns=columns)
 
