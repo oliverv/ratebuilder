@@ -104,7 +104,7 @@ def download_from_google_drive(url):
 
 # --- Streamlit App ---
 
-st.title("CSV Rate Aggregator")
+st.title("CSV Rate Aggregator Rev4")
 
 uploaded_files = st.file_uploader(
     "Upload CSV or ZIP files (or provide links below)",
