@@ -121,7 +121,7 @@ dropbox_url = st.text_input("Dropbox Shared Link:")
 
 num_cheapest = st.number_input("Number of Cheapest Vendors to Average", min_value=1, value=4)
 
-if uploaded_files or dropbox_url :
+if uploaded_files or dropbox_url:
     prefix_data = process_csv_data(uploaded_files, dropbox_url)
 
     results = []
