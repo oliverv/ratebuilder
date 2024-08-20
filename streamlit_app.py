@@ -81,6 +81,28 @@ def process_row(prefix_data, row, filename):
     for rate_type in ["inter_vendor", "intra_vendor", "vendor"]:
         rate_key = f"Rate ({rate_type.replace('_', ', ') if '_' in rate_type else rate_type}, vendor's currency)"
         current_rate = float(row.get(rate_key, "inf"))
+
+        # **CORRECTED FIX:** Initialize before accessing with .get()
+        if rate_type not in data["cheapest_file"]:
+            data["cheapest_file"][rate_type] = {"rate": current_rate, "file": filename}
+        else:  # Only compare if already initialized
+            if current_rate < float(data["cheapest_file"][rate_type]["rate"]):
+                data["cheapest_file"][rate_type] = {"rate": current_rate, "file": filename} 
+                
+def process_row2(prefix_data, row, filename):
+    prefix = row["Prefix"]
+    data = prefix_data[prefix]
+
+    data["inter_vendor_rates"].append(row.get("Rate (inter, vendor's currency)", ""))
+    data["intra_vendor_rates"].append(row.get("Rate (intra, vendor's currency)", ""))
+    data["vendor_rates"].append(row.get("Rate (vendor's currency)", ""))
+    data["description"] = data.get("description") or row.get("Description")
+    data["currency"] = data.get("currency") or row.get("Vendor's currency")
+    data["billing_scheme"] = data.get("billing_scheme") or row.get("Billing scheme")
+
+    for rate_type in ["inter_vendor", "intra_vendor", "vendor"]:
+        rate_key = f"Rate ({rate_type.replace('_', ', ') if '_' in rate_type else rate_type}, vendor's currency)"
+        current_rate = float(row.get(rate_key, "inf"))
         if current_rate < float(data["cheapest_file"][rate_type].get("rate", "inf")):
             data["cheapest_file"][rate_type] = {"rate": current_rate, "file": filename}
 
