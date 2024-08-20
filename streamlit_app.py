@@ -22,7 +22,7 @@ def calculate_average_of_cheapest(rates, n=4, exclude_first_cheapest=True):
     if exclude_first_cheapest and len(rates) > 0:
         rates = rates[1:]  # Exclude the first cheapest rate
     if len(rates) >= n:
-        return round(sum(rates[:n]) / n, 4)
+        return round(sum(rates[:n]) / n, 6)
     return calculate_average_rate(rates)
     
 def calculate_average_of_cheapest1(rates, n=4):
