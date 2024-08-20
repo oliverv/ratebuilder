@@ -16,8 +16,16 @@ def calculate_average_rate(rates):
     if rates:
         return round(sum(rates) / len(rates), 4)
     return 0.0
-
-def calculate_average_of_cheapest(rates, n=4):
+    
+def calculate_average_of_cheapest(rates, n=4, exclude_first_cheapest=True):
+    rates = sorted([float(rate) for rate in rates if str(rate).strip() and float(rate) >= 0.0])
+    if exclude_first_cheapest and len(rates) > 0:
+        rates = rates[1:]  # Exclude the first cheapest rate
+    if len(rates) >= n:
+        return round(sum(rates[:n]) / n, 4)
+    return calculate_average_rate(rates)
+    
+def calculate_average_of_cheapest1(rates, n=4):
     rates = sorted([float(rate) for rate in rates if str(rate).strip() and float(rate) >= 0.0])
     if len(rates) >= n:
         return round(sum(rates[:n]) / n, 4)
@@ -123,9 +131,9 @@ if uploaded_files or dropbox_url or gdrive_url:
         avg_intra_vendor = calculate_average_rate(data["intra_vendor_rates"])
         avg_vendor = calculate_average_rate(data["vendor_rates"])
 
-        avg_cheapest_inter_vendor = calculate_average_of_cheapest(data["inter_vendor_rates"], num_cheapest)
-        avg_cheapest_intra_vendor = calculate_average_of_cheapest(data["intra_vendor_rates"], num_cheapest)
-        avg_cheapest_vendor = calculate_average_of_cheapest(data["vendor_rates"], num_cheapest)
+        avg_cheapest_inter_vendor = calculate_average_of_cheapest(data["inter_vendor_rates"], num_cheapest, exclude_first_cheapest=True)
+        avg_cheapest_intra_vendor = calculate_average_of_cheapest(data["intra_vendor_rates"], num_cheapest, exclude_first_cheapest=True)
+        avg_cheapest_vendor = calculate_average_of_cheapest(data["vendor_rates"], num_cheapest, exclude_first_cheapest=True)
 
         results.append([
             prefix,
@@ -158,9 +166,9 @@ if uploaded_files or dropbox_url or gdrive_url:
 
     cheapest_columns = [
         "Prefix", "Description",
-        f"Average Rate (inter, {num_cheapest} cheapest)",
-        f"Average Rate (intra, {num_cheapest} cheapest)",
-        f"Average Rate ({num_cheapest} cheapest vendors)",
+        f"Average Rate (inter, {num_cheapest} cheapest excluding 1)",
+        f"Average Rate (intra, {num_cheapest} cheapest excluding 1)",
+        f"Average Rate ({num_cheapest} cheapest vendors excluding 1)",
         "Vendor's currency",
         "Billing scheme"
     ]
@@ -171,7 +179,7 @@ if uploaded_files or dropbox_url or gdrive_url:
     st.subheader("All Vendors' Average Rates")
     st.dataframe(df)
 
-    st.subheader(f"Average Rates of {num_cheapest} Cheapest Vendors")
+    st.subheader(f"Average Rates of {num_cheapest} Cheapest Vendors (Excluding First Cheapest)")
     st.dataframe(df_cheapest)
 
     csv_all = df.to_csv(index=False)
@@ -185,9 +193,8 @@ if uploaded_files or dropbox_url or gdrive_url:
     )
 
     st.download_button(
-        label=f"Download average rates of {num_cheapest} cheapest vendors as CSV",
+        label=f"Download average rates of {num_cheapest} cheapest vendors excluding 1 as CSV",
         data=csv_cheapest,
-        file_name=f'{num_cheapest}_cheapest_vendors_average_rates.csv',
+        file_name=f'{num_cheapest}_cheapest_vendors_excluding_1_average_rates.csv',
         mime='text/csv',
     )
-    
