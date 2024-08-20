@@ -23,6 +23,7 @@ def calculate_average_of_cheapest(rates, n=4, exclude_first_cheapest=True):
     return calculate_average_rate(rates)
 
 def process_csv_data(uploaded_files, dropbox_url, gdrive_url):
+    """Processes CSV data from uploaded files or provided links."""
     prefix_data = defaultdict(lambda: {
         "inter_vendor_rates": [],
         "intra_vendor_rates": [],
@@ -30,7 +31,7 @@ def process_csv_data(uploaded_files, dropbox_url, gdrive_url):
         "description": None,
         "currency": None,
         "billing_scheme": None,
-        "cheapest_file": {"inter_vendor": None, "intra_vendor": None, "vendor": None}
+        "cheapest_file": {}  # Initialize cheapest_file as an empty dictionary
     })
 
     all_files = []
@@ -59,6 +60,7 @@ def process_csv_data(uploaded_files, dropbox_url, gdrive_url):
     return prefix_data
 
 def process_file(file, prefix_data, filename):
+    """Processes a single CSV file."""
     try:
         file_text = file.read().decode('utf-8')
     except UnicodeDecodeError:
@@ -68,6 +70,7 @@ def process_file(file, prefix_data, filename):
         process_row(prefix_data, row, filename)
 
 def process_row(prefix_data, row, filename):
+    """Processes a single row from the CSV file."""
     prefix = row["Prefix"]
     data = prefix_data[prefix]
 
@@ -82,29 +85,19 @@ def process_row(prefix_data, row, filename):
         rate_key = f"Rate ({rate_type.replace('_', ', ') if '_' in rate_type else rate_type}, vendor's currency)"
         current_rate = float(row.get(rate_key, "inf"))
 
-        # **CORRECTED FIX:** Initialize before accessing with .get()
+        # Initialize with the first valid numeric rate:
         if rate_type not in data["cheapest_file"]:
             data["cheapest_file"][rate_type] = {"rate": current_rate, "file": filename}
-        else:  # Only compare if already initialized
-            if current_rate < float(data["cheapest_file"][rate_type]["rate"]):
-                data["cheapest_file"][rate_type] = {"rate": current_rate, "file": filename} 
-                
-def process_row2(prefix_data, row, filename):
-    prefix = row["Prefix"]
-    data = prefix_data[prefix]
+        else:
+            # Compare only if the existing cheapest rate is numeric:
+            try:
+                cheapest_rate = float(data["cheapest_file"][rate_type]["rate"])
+            except (TypeError, ValueError):
+                cheapest_rate = float("inf")
 
-    data["inter_vendor_rates"].append(row.get("Rate (inter, vendor's currency)", ""))
-    data["intra_vendor_rates"].append(row.get("Rate (intra, vendor's currency)", ""))
-    data["vendor_rates"].append(row.get("Rate (vendor's currency)", ""))
-    data["description"] = data.get("description") or row.get("Description")
-    data["currency"] = data.get("currency") or row.get("Vendor's currency")
-    data["billing_scheme"] = data.get("billing_scheme") or row.get("Billing scheme")
+            if current_rate < cheapest_rate:
+                data["cheapest_file"][rate_type] = {"rate": current_rate, "file": filename}
 
-    for rate_type in ["inter_vendor", "intra_vendor", "vendor"]:
-        rate_key = f"Rate ({rate_type.replace('_', ', ') if '_' in rate_type else rate_type}, vendor's currency)"
-        current_rate = float(row.get(rate_key, "inf"))
-        if current_rate < float(data["cheapest_file"][rate_type].get("rate", "inf")):
-            data["cheapest_file"][rate_type] = {"rate": current_rate, "file": filename}
 
 def download_from_dropbox(url):
     try:
