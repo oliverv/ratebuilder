@@ -46,8 +46,8 @@ def process_csv_data(uploaded_files, dropbox_url, gdrive_url):
         all_files.extend([(f, f.name) for f in uploaded_files])  # Store filename with file object
     if dropbox_url:
         all_files.extend([(download_from_dropbox(dropbox_url)[0], "dropbox_file.zip")])  # Assume zip from Dropbox
-    if gdrive_url:
-        all_files.extend([(download_from_google_drive(gdrive_url)[0], "gdrive_file.zip")])  # Assume zip from GDrive
+#    if gdrive_url:
+ #       all_files.extend([(download_from_google_drive(gdrive_url)[0], "gdrive_file.zip")])  # Assume zip from GDrive
 
     for file, filename in all_files:  # Unpack file and filename
         if isinstance(file, io.BytesIO):
@@ -108,7 +108,7 @@ def download_from_google_drive(url):
 
 # --- Streamlit App ---
 
-st.title("CSV Rate Aggregator")
+st.title("CSV Rate Aggregator Rev03")
 
 uploaded_files = st.file_uploader(
     "Upload CSV or ZIP files (or provide links below)",
@@ -117,12 +117,12 @@ uploaded_files = st.file_uploader(
 )
 
 dropbox_url = st.text_input("Dropbox Shared Link:")
-gdrive_url = st.text_input("Google Drive URL:")
+#gdrive_url = st.text_input("Google Drive URL:")
 
 num_cheapest = st.number_input("Number of Cheapest Vendors to Average", min_value=1, value=4)
 
 if uploaded_files or dropbox_url or gdrive_url:
-    prefix_data = process_csv_data(uploaded_files, dropbox_url, gdrive_url)
+    prefix_data = process_csv_data(uploaded_files, dropbox_url)
 
     results = []
     cheapest_results = []
