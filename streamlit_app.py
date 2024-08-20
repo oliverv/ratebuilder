@@ -119,7 +119,7 @@ def download_from_google_drive(url):
 
 # --- Streamlit App ---
 
-st.title("CSV Rate Aggregator Rev4")
+st.title("CSV Rate Aggregator Rev5")
 
 uploaded_files = st.file_uploader(
     "Upload CSV or ZIP files (or provide links below)",
@@ -133,16 +133,18 @@ gdrive_url = st.text_input("Google Drive URL:")
 num_cheapest = st.number_input("Number of Cheapest Vendors to Average", min_value=1, value=4)
 decimal_places = st.number_input("Decimal Places for Rates", min_value=0, value=6)
 
+
 if uploaded_files or dropbox_url or gdrive_url:
     prefix_data = process_csv_data(uploaded_files, dropbox_url, gdrive_url)
 
     results = []
+    cheapest_results = []  
+
     for prefix, data in prefix_data.items():
         avg_inter_vendor = calculate_average_rate(data["inter_vendor_rates"])
         avg_intra_vendor = calculate_average_rate(data["intra_vendor_rates"])
         avg_vendor = calculate_average_rate(data["vendor_rates"])
 
-        # Format the rates using f-strings:
         avg_inter_vendor = f"{avg_inter_vendor:.{decimal_places}f}"
         avg_intra_vendor = f"{avg_intra_vendor:.{decimal_places}f}"
         avg_vendor = f"{avg_vendor:.{decimal_places}f}"
@@ -155,9 +157,39 @@ if uploaded_files or dropbox_url or gdrive_url:
             avg_vendor,
             data["currency"],
             data["billing_scheme"],
-            data["cheapest_file"]["inter_vendor"]["file"],
-            data["cheapest_file"]["intra_vendor"]["file"],
-            data["cheapest_file"]["vendor"]["file"]
+            data["cheapest_file"].get("inter_vendor", {}).get("file"),  # Handle potential KeyError
+            data["cheapest_file"].get("intra_vendor", {}).get("file"),
+            data["cheapest_file"].get("vendor", {}).get("file")
+        ])
+
+        # Calculate average cheapest rates:
+        avg_cheapest_inter_vendor = calculate_average_of_cheapest(
+            data["inter_vendor_rates"], num_cheapest, exclude_first_cheapest=True
+        )
+        avg_cheapest_intra_vendor = calculate_average_of_cheapest(
+            data["intra_vendor_rates"], num_cheapest, exclude_first_cheapest=True
+        )
+        avg_cheapest_vendor = calculate_average_of_cheapest(
+            data["vendor_rates"], num_cheapest, exclude_first_cheapest=True
+        )
+
+        # Format cheapest rates:
+        avg_cheapest_inter_vendor = f"{avg_cheapest_inter_vendor:.{decimal_places}f}"
+        avg_cheapest_intra_vendor = f"{avg_cheapest_intra_vendor:.{decimal_places}f}"
+        avg_cheapest_vendor = f"{avg_cheapest_vendor:.{decimal_places}f}"
+
+        # Append data to cheapest_results:
+        cheapest_results.append([
+            prefix,
+            data["description"],
+            avg_cheapest_inter_vendor,
+            avg_cheapest_intra_vendor,
+            avg_cheapest_vendor,
+            data["currency"],
+            data["billing_scheme"],
+            data["cheapest_file"].get("inter_vendor", {}).get("file"),
+            data["cheapest_file"].get("intra_vendor", {}).get("file"),
+            data["cheapest_file"].get("vendor", {}).get("file")
         ])
 
     columns = [
@@ -173,6 +205,7 @@ if uploaded_files or dropbox_url or gdrive_url:
     ]
 
     df = pd.DataFrame(results, columns=columns)
+    df_cheapest = pd.DataFrame(cheapest_results, columns=columns)
 
     st.subheader("All Vendors' Average Rates")
     st.dataframe(df)
