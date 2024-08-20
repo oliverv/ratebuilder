@@ -162,4 +162,22 @@ if uploaded_files or dropbox_url or gdrive_url:
     st.subheader("All Vendors' Average Rates")
     st.dataframe(df)
 
-    # ... (rest of your code for cheapest rates and downloads) ... 
+    st.subheader(f"Average Rates of {num_cheapest} Cheapest Vendors (Excluding First Cheapest)")
+    st.dataframe(df_cheapest)
+
+    csv_all = df.to_csv(index=False)
+    csv_cheapest = df_cheapest.to_csv(index=False)
+
+    st.download_button(
+        label="Download all vendors' average rates as CSV",
+        data=csv_all,
+        file_name='all_vendors_average_rates.csv',
+        mime='text/csv',
+    )
+
+    st.download_button(
+        label=f"Download average rates of {num_cheapest} cheapest vendors excluding 1 as CSV",
+        data=csv_cheapest,
+        file_name=f'{num_cheapest}_cheapest_vendors_excluding_1_average_rates.csv',
+        mime='text/csv',
+    )
