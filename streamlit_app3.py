@@ -190,12 +190,12 @@ decimal_places = st.number_input("Decimal Places for Rates", min_value=0, value=
 
 # Step 3: Vendor Selection
 st.header("Vendor Selection")
-vendor_selection_type = st.radio("Select Vendor Selection Type", ("Include", "Exclude"))
+vendor_selection_type2 = st.radio("Select Vendor Selection Type", ("Include", "Exclude"))
 
 vendor_options = list(set(clean_filename(file) for file in file_summary.keys()))
-if vendor_selection_type == "Include":
+if vendor_selection_type2 == "Include":
     included_vendors = st.multiselect("Select Vendors to Include", options=vendor_options, key="include_vendors_unique", help="Include only these vendors in calculations.")
-elif vendor_selection_type == "Exclude":
+elif vendor_selection_type2 == "Exclude":
     excluded_vendors = st.multiselect("Select Vendors to Exclude", options=vendor_options, key="exclude_vendors_unique", help="Exclude these vendors from calculations.")
     
 # Step 4: Process Data
