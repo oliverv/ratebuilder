@@ -11,10 +11,10 @@ import os
 # --- Functions ---
 
 def clean_filename(filename):
-    """Remove 'dial_peer' prefix, '.csv' extension, and replace underscores with spaces."""
+    """Remove 'dial_peer' prefix, '.csv' and '.zip' extensions, and replace underscores with spaces."""
     if filename.startswith("dial_peer"):
         filename = filename.replace("dial_peer", "")
-    return filename.replace(".csv", "").replace("_", " ")
+    return filename.replace(".csv", "").replace(".zip", "").replace("_", " ")
 
 def calculate_average_rate(rates, included_vendors=None, excluded_vendors=None):
     """Calculates the average rate from a list of rates."""
