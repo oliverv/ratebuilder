@@ -1,0 +1,14 @@
+[server] 
+
+maxUploadSize = 1024 
+enableWebsocketCompression = true
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+primaryColor = "#FF6347"  # Example color (tomato red)
+backgroundColor = "#F0F0F0"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#000000"
+font = "sans serif"
