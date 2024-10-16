@@ -173,9 +173,9 @@ if uploaded_files or dropbox_url or gdrive_url:
     # Update vendor selection options based on processed data
     vendor_options = list(set(clean_filename(file) for file in file_summary.keys()))
     if vendor_selection_type == "Include":
-        included_vendors = st.multiselect("Select Vendors to Include", options=vendor_options, help="Include only these vendors in calculations.")
+        included_vendors = st.multiselect("Select Vendors to Include", options=vendor_options, key="include_vendors", help="Include only these vendors in calculations.")
     elif vendor_selection_type == "Exclude":
-        excluded_vendors = st.multiselect("Select Vendors to Exclude", options=vendor_options, help="Exclude these vendors from calculations.")
+        excluded_vendors = st.multiselect("Select Vendors to Exclude", options=vendor_options, key="exclude_vendors", help="Exclude these vendors from calculations.")
 
     # Define columns
     columns = [
