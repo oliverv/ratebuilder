@@ -39,10 +39,13 @@ def create_prefix_dict():
 # Initialize file_summary outside to ensure it's always available
 file_summary = defaultdict(lambda: {"rows": 0, "missing": 0, "valid": 0})
 
-@st.cache_data
+# Cache data using st.cache_resource for resources that are not serializable
+@st.cache_resource
 def process_csv_data(uploaded_files):
     """Processes CSV data from uploaded files and generates a summary before final processing."""
     prefix_data = defaultdict(create_prefix_dict)
+    summary_results = {}
+
     for uploaded_file in uploaded_files:
         if uploaded_file.name.endswith('.zip'):
             with zipfile.ZipFile(uploaded_file, 'r') as z:
@@ -54,7 +57,11 @@ def process_csv_data(uploaded_files):
         else:
             count_and_summarize(uploaded_file, uploaded_file.name, file_summary)
             read_and_process_csv(uploaded_file, prefix_data, uploaded_file.name, file_summary)
-    return prefix_data, file_summary
+
+    # Return only serializable data
+    summary_results["prefix_data"] = prefix_data
+    summary_results["file_summary"] = dict(file_summary)
+    return summary_results
 
 def count_and_summarize(file, filename, summary):
     """Counts the rows in a file and checks for missing data."""
@@ -99,7 +106,9 @@ st.title("CSV Rate Aggregator with File Summary")
 uploaded_files = st.file_uploader("Upload CSV or ZIP files", type=["csv", "zip"], accept_multiple_files=True)
 
 if uploaded_files:
-    prefix_data, file_summary = process_csv_data(uploaded_files)
+    result = process_csv_data(uploaded_files)
+    prefix_data = result["prefix_data"]
+    file_summary = result["file_summary"]
 
     # Display file summaries before final processing
     st.header("File Summary")
