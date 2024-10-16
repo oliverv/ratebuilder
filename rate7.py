@@ -40,7 +40,7 @@ def create_prefix_dict():
 # Initialize file_summary outside to ensure it's always available
 file_summary = defaultdict(lambda: {"rows": 0, "missing": 0, "valid": 0})
 
-@st.cache_data
+#@st.cache_data
 def process_csv_data(uploaded_files):
     """Processes CSV data from uploaded files."""
     prefix_data = defaultdict(create_prefix_dict)
