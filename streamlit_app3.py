@@ -136,6 +136,18 @@ def download_from_google_drive(url):
     except requests.exceptions.RequestException as e:
         st.error(f"Error downloading from Google Drive: {e}")
         return []
+        
+def load_file(source, name):
+    try:
+        if name.endswith('.zip'):
+            with zipfile.ZipFile(io.BytesIO(source.read()), 'r') as z:
+                for inner_filename in z.namelist():
+                    if inner_filename.endswith('.csv'):
+                        process_file(z.open(inner_filename), prefix_data, inner_filename)
+        elif name.endswith('.csv'):
+            process_file(io.StringIO(source.read().decode('utf-8')), prefix_data, name)
+    except Exception as e:
+        st.error(f"Error processing file {name}: {str(e)}")
 
 # --- Streamlit App ---
 
@@ -162,13 +174,12 @@ decimal_places = st.number_input("Decimal Places for Rates", min_value=0, value=
 st.header("Vendor Selection")
 vendor_selection_type = st.radio("Select Vendor Selection Type", ("Include", "Exclude"))
 
+vendor_options = list(set(clean_filename(file) for file in file_summary.keys()))
 if vendor_selection_type == "Include":
-    included_vendors = st.multiselect("Select Vendors to Include", options=[], key="include_vendors", help="Include only these vendors in calculations.")
-    excluded_vendors = None
+    included_vendors = st.multiselect("Select Vendors to Include", options=vendor_options, key="include_vendors_unique", help="Include only these vendors in calculations.")
 elif vendor_selection_type == "Exclude":
-    excluded_vendors = st.multiselect("Select Vendors to Exclude", options=[], key="exclude_vendors", help="Exclude these vendors from calculations.")
-    included_vendors = None
-
+    excluded_vendors = st.multiselect("Select Vendors to Exclude", options=vendor_options, key="exclude_vendors_unique", help="Exclude these vendors from calculations.")
+    
 # Step 4: Process Data
 if uploaded_files or dropbox_url or gdrive_url:
     prefix_data, file_summary = process_csv_data(uploaded_files, dropbox_url, gdrive_url)
