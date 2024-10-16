@@ -8,7 +8,8 @@ import io
 import matplotlib.pyplot as plt
 import os
 
-# Helper functions and Streamlit app setup remain largely the same.
+# --- Functions ---
+
 def clean_filename(filename):
     """Remove 'dial_peer' prefix, '.csv' and '.zip' extensions, and replace underscores with spaces."""
     if filename.startswith("dial_peer"):
@@ -41,38 +42,36 @@ def calculate_average_of_cheapest(rates_with_files, n=4, exclude_first_cheapest=
     cheapest_file = selected_rates[0][1] if selected_rates else None  # File with the cheapest rate
     return avg_rate, cheapest_file
 
-# Enhanced process_csv_data function with error handling
-
 @st.cache_data
 def process_csv_data(uploaded_files, dropbox_url, gdrive_url):
     """Processes CSV data from uploaded files or provided links."""
     prefix_data = defaultdict(create_prefix_dict)
     file_summary = defaultdict(int)
     all_files = []
-
-    # Load and process files with error handling
-    def load_file(source, name):
-        try:
-            if source.endswith('.zip'):
-                with zipfile.ZipFile(io.BytesIO(source.read()), 'r') as z:
-                    for inner_filename in z.namelist():
-                        if inner_filename.endswith('.csv'):
-                            process_file(z.open(inner_filename), prefix_data, inner_filename)
-            elif source.endswith('.csv'):
-                process_file(source, prefix_data, name)
-        except Exception as e:
-            st.error(f"Error processing file {name}: {str(e)}")
-
     if uploaded_files:
-        for f in uploaded_files:
-            load_file(f, f.name)
+        all_files.extend([(f, f.name) for f in uploaded_files])
     if dropbox_url:
-        load_file(download_from_dropbox(dropbox_url), "dropbox_file.zip")
+        all_files.extend([(download_from_dropbox(dropbox_url)[0], "dropbox_file.zip")])
     if gdrive_url:
-        load_file(download_from_google_drive(gdrive_url), "gdrive_file.zip")
+        all_files.extend([(download_from_google_drive(gdrive_url)[0], "gdrive_file.zip")])
+
+    for file, filename in all_files:
+        if isinstance(file, io.BytesIO):
+            file_contents = file.getvalue()
+        else:
+            file_contents = file.read()
+
+        if filename.endswith('.zip'):
+            with zipfile.ZipFile(io.BytesIO(file_contents), 'r') as z:
+                for inner_filename in z.namelist():
+                    if inner_filename.endswith('.csv'):
+                        with z.open(inner_filename) as f:
+                            process_file(f, prefix_data, inner_filename)
+        elif filename.endswith('.csv'):
+            process_file(file, prefix_data, filename)
 
     return prefix_data, file_summary
-    
+
 def create_prefix_dict():
     """Creates the dictionary structure for each prefix."""
     return {
