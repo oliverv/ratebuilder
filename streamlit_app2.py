@@ -151,10 +151,10 @@ st.header("Vendor Selection")
 vendor_selection_type = st.radio("Select Vendor Selection Type", ("Include", "Exclude"))
 
 if vendor_selection_type == "Include":
-    included_vendors = st.multiselect("Select Vendors to Include", options=[], key="include_vendors", help="Include only these vendors in calculations.")
+    included_vendors = st.multiselect("Select Vendors to Include", options=[], key="include_vendors1", help="Include only these vendors in calculations.")
     excluded_vendors = None
 elif vendor_selection_type == "Exclude":
-    excluded_vendors = st.multiselect("Select Vendors to Exclude", options=[], key="exclude_vendors", help="Exclude these vendors from calculations.")
+    excluded_vendors = st.multiselect("Select Vendors to Exclude", options=[], key="exclude_vendors1", help="Exclude these vendors from calculations.")
     included_vendors = None
 
 # Step 4: Process Data
