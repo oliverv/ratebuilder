@@ -16,9 +16,9 @@ def clean_filename(filename):
         filename = filename.replace("dial_peer", "")
     return filename.replace(".csv", "").replace(".zip", "").replace("_", " ")
 
-def calculate_average_rate(rates_with_files, included_vendors=None, excluded_vendors=None):
+def calculate_average_rate(rates, included_vendors=None, excluded_vendors=None):
     """Calculates the average rate from a list of rates."""
-    rates = [float(rate) for rate, file in rates_with_files if str(rate).strip() and float(rate) >= 0.0 and
+    rates = [float(rate) for rate, file in rates if str(rate).strip() and float(rate) >= 0.0 and
              ((included_vendors is None or clean_filename(file) in included_vendors) and
               (excluded_vendors is None or clean_filename(file) not in excluded_vendors))]
     if rates:
@@ -151,10 +151,10 @@ st.header("Vendor Selection")
 vendor_selection_type = st.radio("Select Vendor Selection Type", ("Include", "Exclude"))
 
 if vendor_selection_type == "Include":
-    included_vendors = st.multiselect("Select Vendors to Include", options=[], help="Include only these vendors in calculations.")
+    included_vendors = st.multiselect("Select Vendors to Include", options=[], key="include_vendors", help="Include only these vendors in calculations.")
     excluded_vendors = None
 elif vendor_selection_type == "Exclude":
-    excluded_vendors = st.multiselect("Select Vendors to Exclude", options=[], help="Exclude these vendors from calculations.")
+    excluded_vendors = st.multiselect("Select Vendors to Exclude", options=[], key="exclude_vendors", help="Exclude these vendors from calculations.")
     included_vendors = None
 
 # Step 4: Process Data
