@@ -39,47 +39,20 @@ def create_prefix_dict():
 # Initialize file_summary outside to ensure it's always available
 file_summary = defaultdict(lambda: {"rows": 0, "missing": 0, "valid": 0})
 
-# Cache data using st.cache_resource for resources that are not serializable
-@st.cache_resource
+@st.cache_data
 def process_csv_data(uploaded_files):
-    """Processes CSV data from uploaded files and generates a summary before final processing."""
+    """Processes CSV data from uploaded files."""
     prefix_data = defaultdict(create_prefix_dict)
-    summary_results = {}
-
     for uploaded_file in uploaded_files:
         if uploaded_file.name.endswith('.zip'):
             with zipfile.ZipFile(uploaded_file, 'r') as z:
                 for inner_filename in z.namelist():
                     if inner_filename.endswith('.csv'):
                         with z.open(inner_filename) as file:
-                            count_and_summarize(file, inner_filename, file_summary)
                             read_and_process_csv(file, prefix_data, inner_filename, file_summary)
         else:
-            count_and_summarize(uploaded_file, uploaded_file.name, file_summary)
             read_and_process_csv(uploaded_file, prefix_data, uploaded_file.name, file_summary)
-
-    # Return only serializable data
-    summary_results["prefix_data"] = prefix_data
-    summary_results["file_summary"] = dict(file_summary)
-    return summary_results
-
-def count_and_summarize(file, filename, summary):
-    """Counts the rows in a file and checks for missing data."""
-    try:
-        file_text = file.read().decode('utf-8')
-    except UnicodeDecodeError:
-        file_text = file.read().decode('latin-1')
-    reader = csv.DictReader(io.StringIO(file_text))
-    row_count = 0
-    missing_count = 0
-    for row in reader:
-        row_count += 1
-        if not row.get("Prefix") or not row.get("Rate (vendor's currency)"):
-            missing_count += 1
-    
-    summary[filename]["rows"] = row_count
-    summary[filename]["missing"] = missing_count
-    summary[filename]["valid"] = row_count - missing_count
+    return prefix_data, file_summary
 
 def read_and_process_csv(file, prefix_data, filename, file_summary):
     """Reads and processes CSV file data."""
@@ -119,11 +92,11 @@ def summarize_and_highlight_cheapest(prefix_data, num_cheapest=4):
             "Prefix": prefix,
             "Description": data["description"],
             "Cheapest Inter-Vendor Rate": avg_inter_vendor,
-            "Cheapest Inter-Vendor File": cheapest_inter_file,
+            "Cheapest Inter-Vendor File": clean_filename(cheapest_inter_file),
             "Cheapest Intra-Vendor Rate": avg_intra_vendor,
-            "Cheapest Intra-Vendor File": cheapest_intra_file,
+            "Cheapest Intra-Vendor File": clean_filename(cheapest_intra_file),
             "Cheapest Vendor Rate": avg_vendor,
-            "Cheapest Vendor File": cheapest_vendor_file,
+            "Cheapest Vendor File": clean_filename(cheapest_vendor_file),
             "Vendor's currency": data["currency"],
             "Billing scheme": data["billing_scheme"]
         })
@@ -136,9 +109,7 @@ st.title("CSV Rate Aggregator with Duplicates and Cheapest Rates Highlight")
 uploaded_files = st.file_uploader("Upload CSV or ZIP files", type=["csv", "zip"], accept_multiple_files=True)
 
 if uploaded_files:
-    result = process_csv_data(uploaded_files)
-    prefix_data = result["prefix_data"]
-    file_summary = result["file_summary"]
+    prefix_data, file_summary = process_csv_data(uploaded_files)
 
     # Display file summaries before final processing
     st.header("File Summary")
