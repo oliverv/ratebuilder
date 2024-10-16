@@ -18,7 +18,7 @@ def clean_filename(filename):
 
 def calculate_average_rate(rates, included_vendors=None, excluded_vendors=None):
     """Calculates the average rate from a list of rates."""
-    rates = [float(rate) for rate, _ in rates if str(rate).strip() and float(rate) >= 0.0 and
+    rates = [float(rate) for rate, file in rates if str(rate).strip() and float(rate) >= 0.0 and
              ((included_vendors is None or clean_filename(file) in included_vendors) and
               (excluded_vendors is None or clean_filename(file) not in excluded_vendors))]
     if rates:
