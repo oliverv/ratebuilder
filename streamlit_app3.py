@@ -6,8 +6,7 @@ import zipfile
 import requests
 import io
 
-# --- Functions ---
-
+# --- Helper Functions ---
 def clean_filename(filename):
     """Remove 'dial_peer' prefix, '.csv' and '.zip' extensions, and replace underscores with spaces."""
     if filename.startswith("dial_peer"):
@@ -15,12 +14,82 @@ def clean_filename(filename):
     return filename.replace(".csv", "").replace(".zip", "").replace("_", " ")
 
 def calculate_average_rate(rates):
+    """Calculate the average of numerical rate values."""
+    rates = [float(rate) for rate, _ in rates if str(rate).strip() and float(rate) >= 0.0]
+    return round(sum(rates) / len(rates), 6) if rates else 0.0
+
+def calculate_average_of_cheapest(rates_with_files, n=4, exclude_first_cheapest=True, included_vendors=None, excluded_vendors=None):
+    """Calculate the average of the cheapest n rates after applying include/exclude filters."""
+    rates_with_files = sorted([(float(rate), file) for rate, file in rates_with_files if str(rate).strip() and float(rate) >= 0.0 and
+                              ((included_vendors is None or clean_filename(file) in included_vendors) and
+                               (excluded_vendors is None or clean_filename(file) not in excluded_vendors))])
+    if exclude_first_cheapest and len(rates_with_files) > 0:
+        rates_with_files.pop(0)  # Remove the first cheapest rate
+    selected_rates = rates_with_files[:n] if len(rates_with_files) >= n else rates_with_files
+    avg_rate = round(sum(rate for rate, _ in selected_rates) / len(selected_rates), 6) if selected_rates else 0.0
+    cheapest_file = selected_rates[0][1] if selected_rates else None
+    return avg_rate, cheapest_file
+
+def create_prefix_dict():
+    """Creates a dictionary to store data for each prefix."""
+    return {
+        "inter_vendor_rates": [],
+        "intra_vendor_rates": [],
+        "vendor_rates": [],
+        "description": None,
+        "currency": None,
+        "billing_scheme": None,
+        "cheapest_file": {}
+    }
+
+@st.cache_data
+def process_csv_data(uploaded_files):
+    """Processes CSV data from uploaded files."""
+    prefix_data = defaultdict(create_prefix_dict)
+    file_summary = defaultdict(int)
+    for uploaded_file in uploaded_files:
+        if uploaded_file.name.endswith('.zip'):
+            with zipfile.ZipFile(uploaded_file, 'r') as z:
+                for inner_filename in z.namelist():
+                    with z.open(inner_filename) as file:
+                        read_and_process_csv(file, prefix_data, inner_filename)
+        else:
+            read_and_process_csv(uploaded_file, prefix_data, uploaded_file.name)
+    return prefix_data, file_summary
+
+def read_and_process_csv(file, prefix_data, filename):
+    """Reads and processes CSV file data."""
+    try:
+        file_text = file.read().decode('utf-8')
+    except UnicodeDecodeError:
+        file_text = file.read().decode('latin-1')
+    reader = csv.DictReader(io.StringIO(file_text))
+    for row in reader:
+        process_row(prefix_data, row, filename)
+
+def process_row(prefix_data, row, filename):
+    """Processes each row of the CSV file."""
+    prefix = row["Prefix"]
+    data = prefix_data[prefix]
+    data["inter_vendor_rates"].append((row.get("Rate (inter, vendor's currency)", 0), filename))
+    data["intra_vendor_rates"].append((row.get("Rate (intra, vendor's currency)", 0), filename))
+    data["vendor_rates"].append((row.get("Rate (vendor's currency)", 0), filename))
+
+# --- Functions ---
+
+def c3lean_filename(filename):
+    """Remove 'dial_peer' prefix, '.csv' and '.zip' extensions, and replace underscores with spaces."""
+    if filename.startswith("dial_peer"):
+        filename = filename.replace("dial_peer", "")
+    return filename.replace(".csv", "").replace(".zip", "").replace("_", " ")
+
+def c3alculate_average_rate(rates):
     rates = [float(rate) for rate, _ in rates if str(rate).strip() and float(rate) >= 0.0]
     if rates:
         return round(sum(rates) / len(rates), 6)  # Default to 6 decimal places
     return 0.0
 
-def calculate_average_of_cheapest(rates_with_files, n=4, exclude_first_cheapest=True, included_vendors=None, excluded_vendors=None):
+def ca3lculate_average_of_cheapest(rates_with_files, n=4, exclude_first_cheapest=True, included_vendors=None, excluded_vendors=None):
     """Calculates the average of the n cheapest rates, optionally excluding the first cheapest.
        Also returns the file name where the cheapest rate is found."""
     rates_with_files = sorted([(float(rate), file) for rate, file in rates_with_files if str(rate).strip() and float(rate) >= 0.0 and
@@ -174,13 +243,6 @@ if uploaded_files or dropbox_url or gdrive_url:
     st.success("Files successfully uploaded and processed.")
 
 vendor_options = list(set(clean_filename(file) for file in file_summary.keys()))
-st.header("Vendor Selection")
-vendor_selection_type = st.radio("Select Vendor Selection Type", ("Include", "Exclude"))
-
-if vendor_selection_type == "Include":
-    included_vendors = st.multiselect("Select Vendors to Include", options=vendor_options, key="include_vendors", help="Include only these vendors in calculations.")
-elif vendor_selection_type == "Exclude":
-    excluded_vendors = st.multiselect("Select Vendors to Exclude", options=vendor_options, key="exclude_vendors", help="Exclude these vendors from calculations.")
     
 # Step 2: Set Parameters
 st.header("Set Parameters")
@@ -199,6 +261,17 @@ elif vendor_selection_type2 == "Exclude":
     excluded_vendors = st.multiselect("Select Vendors to Exclude", options=vendor_options, key="exclude_vendors_unique", help="Exclude these vendors from calculations.")
     
 # Step 4: Process Data
+if uploaded_files:
+    prefix_data, file_summary = process_csv_data(uploaded_files)
+    st.success("Files successfully uploaded and processed.")
+    vendor_options = list(set(clean_filename(file) for file in file_summary.keys()))
+    vendor_selection_type = st.radio("Select Vendor Selection Type", ("Include", "Exclude"))
+
+    if vendor_selection_type == "Include":
+        included_vendors = st.multiselect("Select Vendors to Include", options=vendor_options, key="vendors_include")
+    else:
+        excluded_vendors = st.multiselect("Select Vendors to Exclude", options=vendor_options, key="vendors_exclude")
+        
 if uploaded_files or dropbox_url or gdrive_url:
     prefix_data, file_summary = process_csv_data(uploaded_files, dropbox_url, gdrive_url)
     st.success("Files successfully uploaded and processed.")
