@@ -37,11 +37,25 @@ def calculate_average_of_cheapest(rates_with_files, n=4, exclude_first_cheapest=
     cheapest_file = selected_rates[0][1] if selected_rates else None  # File with the cheapest rate
     return avg_rate, cheapest_file
 
+# Define the function to create a dictionary structure for each prefix
+def create_prefix_dict():
+    return {
+        "inter_vendor_rates": [],
+        "intra_vendor_rates": [],
+        "vendor_rates": [],
+        "description": None,
+        "currency": None,
+        "billing_scheme": None,
+        "cheapest_file": {}
+    }
+
+# Initialize file_summary outside to ensure it's always available
+file_summary = defaultdict(int)
+
 @st.cache_data
-def process_csv_data(uploaded_files, dropbox_url, gdrive_url):
+def process_csv_data(uploaded_files, dropbox_url, gdrive_url, file_summary):
     """Processes CSV data from uploaded files or provided links."""
     prefix_data = defaultdict(create_prefix_dict)
-    file_summary = defaultdict(int)
     all_files = []
     if uploaded_files:
         all_files.extend([(f, f.name) for f in uploaded_files])
@@ -67,17 +81,8 @@ def process_csv_data(uploaded_files, dropbox_url, gdrive_url):
 
     return prefix_data, file_summary
 
-def create_prefix_dict():
-    """Creates the dictionary structure for each prefix."""
-    return {
-        "inter_vendor_rates": [],
-        "intra_vendor_rates": [],
-        "vendor_rates": [],
-        "description": None,
-        "currency": None,
-        "billing_scheme": None,
-        "cheapest_file": {}
-    }
+# Definitions for other functions such as process_file, download_from_dropbo
+
 
 def process_file(file, prefix_data, filename, file_summary):
     """Processes a single CSV file."""
@@ -164,6 +169,19 @@ uploaded_files = st.file_uploader(
 dropbox_url = st.text_input("Dropbox Shared Link:")
 gdrive_url = st.text_input("Google Drive URL:")
 
+if uploaded_files or dropbox_url or gdrive_url:
+    prefix_data, file_summary = process_csv_data(uploaded_files, dropbox_url, gdrive_url, file_summary)
+    st.success("Files successfully uploaded and processed.")
+
+vendor_options = list(set(clean_filename(file) for file in file_summary.keys()))
+st.header("Vendor Selection")
+vendor_selection_type = st.radio("Select Vendor Selection Type", ("Include", "Exclude"))
+
+if vendor_selection_type == "Include":
+    included_vendors = st.multiselect("Select Vendors to Include", options=vendor_options, key="include_vendors", help="Include only these vendors in calculations.")
+elif vendor_selection_type == "Exclude":
+    excluded_vendors = st.multiselect("Select Vendors to Exclude", options=vendor_options, key="exclude_vendors", help="Exclude these vendors from calculations.")
+    
 # Step 2: Set Parameters
 st.header("Set Parameters")
 num_cheapest = st.number_input("Number of Cheapest Vendors to Average", min_value=1, value=4)
