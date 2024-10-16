@@ -261,6 +261,17 @@ elif vendor_selection_type2 == "Exclude":
     excluded_vendors = st.multiselect("Select Vendors to Exclude", options=vendor_options, key="exclude_vendors_unique", help="Exclude these vendors from calculations.")
     
 # Step 4: Process Data
+if uploaded_files:
+    prefix_data, file_summary = process_csv_data(uploaded_files)
+    st.success("Files successfully uploaded and processed.")
+    vendor_options = list(set(clean_filename(file) for file in file_summary.keys()))
+    vendor_selection_type = st.radio("Select Vendor Selection Type", ("Include", "Exclude"))
+
+    if vendor_selection_type == "Include":
+        included_vendors = st.multiselect("Select Vendors to Include", options=vendor_options, key="vendors_include")
+    else:
+        excluded_vendors = st.multiselect("Select Vendors to Exclude", options=vendor_options, key="vendors_exclude")
+        
 if uploaded_files or dropbox_url or gdrive_url:
     prefix_data, file_summary = process_csv_data(uploaded_files, dropbox_url, gdrive_url)
     st.success("Files successfully uploaded and processed.")
