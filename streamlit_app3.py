@@ -42,14 +42,15 @@ def calculate_average_of_cheapest(rates_with_files, n=4, exclude_first_cheapest=
     return avg_rate, cheapest_file
 
 # Enhanced process_csv_data function with error handling
-@st.cache  # Corrected cache decorator
+
+@st.cache_data
 def process_csv_data(uploaded_files, dropbox_url, gdrive_url):
     """Processes CSV data from uploaded files or provided links."""
     prefix_data = defaultdict(create_prefix_dict)
     file_summary = defaultdict(int)
     all_files = []
-    
-    # Combine file loading and error handling
+
+    # Load and process files with error handling
     def load_file(source, name):
         try:
             if source.endswith('.zip'):
@@ -71,7 +72,7 @@ def process_csv_data(uploaded_files, dropbox_url, gdrive_url):
         load_file(download_from_google_drive(gdrive_url), "gdrive_file.zip")
 
     return prefix_data, file_summary
-
+    
 def create_prefix_dict():
     """Creates the dictionary structure for each prefix."""
     return {
