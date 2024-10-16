@@ -8,6 +8,12 @@ import io
 
 # --- Functions ---
 
+def clean_filename(filename):
+    """Remove 'dial_peer' prefix, '.csv' and '.zip' extensions, and replace underscores with spaces."""
+    if filename.startswith("dial_peer"):
+        filename = filename.replace("dial_peer", "")
+    return filename.replace(".csv", "").replace(".zip", "").replace("_", " ")
+
 def calculate_average_rate(rates):
     rates = [float(rate) for rate, _ in rates if str(rate).strip() and float(rate) >= 0.0]
     if rates:
@@ -70,44 +76,44 @@ def create_prefix_dict():
     }
 
 def process_file(file, prefix_data, filename, file_summary):
-    """Processes a single CSV file and extracts prefix data."""
+    """Processes a single CSV file."""
     try:
         file_text = file.read().decode('utf-8')
     except UnicodeDecodeError:
         file_text = file.read().decode('latin-1')
     reader = csv.DictReader(file_text.splitlines())
-
     for row in reader:
-        prefix = row["Prefix"]
-        data = prefix_data[prefix]
+        process_row(prefix_data, row, filename)
 
-        # Convert rates to float directly during processing
-        data["inter_vendor_rates"].append((float(row.get("Rate (inter, vendor's currency)", "0.0")), filename))
-        data["intra_vendor_rates"].append((float(row.get("Rate (intra, vendor's currency)", "0.0")), filename))
-        data["vendor_rates"].append((float(row.get("Rate (vendor's currency)", "0.0")), filename))
-        data["description"] = data.get("description") or row.get("Description")
-        data["currency"] = data.get("currency") or row.get("Vendor's currency")
-        data["billing_scheme"] = data.get("billing_scheme") or row.get("Billing scheme")
-        data["vendor_file"] = filename  # Store the filename separately
+def process_row(prefix_data, row, filename):
+    """Processes a single row from the CSV file."""
+    prefix = row["Prefix"]
+    data = prefix_data[prefix]
 
-        for rate_type in ["inter_vendor", "intra_vendor", "vendor"]:
-            rate_key = f"Rate ({rate_type.replace('_', ', ') if '_' in rate_type else rate_type}, vendor's currency)"
-            current_rate = float(row.get(rate_key, "inf"))
+    data["inter_vendor_rates"].append(row.get("Rate (inter, vendor's currency)", ""))
+    data["intra_vendor_rates"].append(row.get("Rate (intra, vendor's currency)", ""))
+    data["vendor_rates"].append(row.get("Rate (vendor's currency)", ""))
+    data["description"] = data.get("description") or row.get("Description")
+    data["currency"] = data.get("currency") or row.get("Vendor's currency")
+    data["billing_scheme"] = data.get("billing_scheme") or row.get("Billing scheme")
 
-            # Initialize with the first valid numeric rate:
-            if rate_type not in data["cheapest_file"]:
+    for rate_type in ["inter_vendor", "intra_vendor", "vendor"]:
+        rate_key = f"Rate ({rate_type.replace('_', ', ') if '_' in rate_type else rate_type}, vendor's currency)"
+        current_rate = float(row.get(rate_key, "inf"))
+
+        # Initialize with the first valid numeric rate:
+        if rate_type not in data["cheapest_file"]:
+            data["cheapest_file"][rate_type] = {"rate": current_rate, "file": filename}
+        else:
+            # Compare only if the existing cheapest rate is numeric:
+            try:
+                cheapest_rate = float(data["cheapest_file"][rate_type]["rate"])
+            except (TypeError, ValueError):
+                cheapest_rate = float("inf")
+
+            if current_rate < cheapest_rate:
                 data["cheapest_file"][rate_type] = {"rate": current_rate, "file": filename}
-                file_summary[filename] += 1  # Increment the count for this file
-            else:
-                # Compare only if the existing cheapest rate is numeric:
-                try:
-                    cheapest_rate = float(data["cheapest_file"][rate_type]["rate"])
-                except (TypeError, ValueError):
-                    cheapest_rate = float("inf")
 
-                if current_rate < cheapest_rate:
-                    data["cheapest_file"][rate_type] = {"rate": current_rate, "file": filename}
-                    file_summary[filename] += 1  # Increment the count for this file
 
 def download_from_dropbox(url):
     try:
@@ -119,7 +125,6 @@ def download_from_dropbox(url):
         return []
 
 def download_from_google_drive(url):
-    """Downloads files from Google Drive."""
     try:
         response = requests.get(url)
         response.raise_for_status()
