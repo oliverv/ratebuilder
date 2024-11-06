@@ -158,7 +158,7 @@ def download_from_google_drive(url):
 # Display Logo and Title
 logo = Image.open("logo.png")  # Ensure logo.png is in the working directory
 st.image(logo, width=200)
-st.title("Telecall - CSV Rate Aggregator Rev11")
+st.title("Telecall - CSV Rate Aggregator v13.0")
 
 uploaded_files = st.file_uploader(
     "Upload CSV or ZIP files (no Dropbox support)",
@@ -266,7 +266,7 @@ if uploaded_files or gdrive_url:
         )
 
         # Display and download main LCR results
-        st.subheader("Combined Average and LCR Cost Summary (Rates <= Threshold)")
+        st.subheader("Final Combined Average and LCR Cost Summary (Rates <= Threshold)")
         st.dataframe(df_main)
         csv_main = df_main.to_csv(index=False, float_format=f"%.{final_decimal_places}f")
         st.download_button(
@@ -277,7 +277,7 @@ if uploaded_files or gdrive_url:
         )
 
         # Display and download high-rate prefixes
-        st.subheader("Prefixes with Rates Above Threshold")
+        st.subheader("Prefixes with Rates Above High-rate Threshold")
         st.dataframe(df_high_rates)
         csv_high_rates = df_high_rates.to_csv(index=False, float_format=f"%.{final_decimal_places}f")
         st.download_button(
