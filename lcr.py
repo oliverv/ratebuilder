@@ -34,13 +34,13 @@ def process_csv_data(uploaded_files, gdrive_url, rate_threshold=1.0):
         "inter_vendor_rates": [],
         "intra_vendor_rates": [],
         "vendor_rates": [],
-        "file_names": [],  # Store file names here for each rate entry
         "description": None,
         "currency": None,
         "billing_scheme": None
     })
     vendor_names = set()
     high_rate_prefixes = []  # Store prefixes with any rate above the threshold
+    file_summaries = []  # Store total prefix count and high-rate count per file
 
     all_files = []
     if uploaded_files:
@@ -49,6 +49,9 @@ def process_csv_data(uploaded_files, gdrive_url, rate_threshold=1.0):
         all_files.extend([(download_from_google_drive(gdrive_url)[0], "gdrive_file.zip")])
 
     for file, filename in all_files:
+        prefix_count = set()  # Track unique prefixes per file
+        high_rate_count = 0  # Track high-rate count per file
+
         if isinstance(file, io.BytesIO):
             file_contents = file.getvalue()
         else:
@@ -59,13 +62,19 @@ def process_csv_data(uploaded_files, gdrive_url, rate_threshold=1.0):
                 for inner_filename in z.namelist():
                     if inner_filename.endswith('.csv'):
                         with z.open(inner_filename) as f:
-                            vendor_names.update(process_file(f, prefix_data, high_rate_prefixes, rate_threshold, filename))
+                            vendor_names.update(process_file(f, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count))
         elif filename.endswith('.csv'):
-            vendor_names.update(process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename))
+            vendor_names.update(process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count))
 
-    return prefix_data, sorted(vendor_names), high_rate_prefixes
+        file_summaries.append({
+            "filename": filename,
+            "total_prefix_count": len(prefix_count),
+            "high_rate_count": high_rate_count
+        })
 
-def process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename):
+    return prefix_data, sorted(vendor_names), high_rate_prefixes, file_summaries
+
+def process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count):
     """Processes a single CSV file, adds high-rate prefixes to a separate list, and returns unique vendor names."""
     vendor_names = set()
     try:
@@ -78,6 +87,8 @@ def process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename
         if vendor_name:
             vendor_names.add(vendor_name)
         prefix = row["Prefix"]
+        prefix_count.add(prefix)  # Track unique prefixes
+
         data = prefix_data[prefix]
 
         # Check each rate type and add prefix to high_rate_prefixes if any rate is above the threshold
@@ -87,7 +98,8 @@ def process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename
             if rate_value and float(rate_value) > rate_threshold:
                 high_rate_found = True
         if high_rate_found:
-            high_rate_prefixes.append((prefix, row))
+            high_rate_prefixes.append((prefix, row, filename))  # Include filename with high-rate prefix
+            high_rate_count += 1
             continue  # Skip adding this prefix to main prefix_data for LCR calculation
 
         # Add rates and file names to respective lists if they exist
@@ -143,11 +155,14 @@ rate_threshold = st.number_input("Rate Threshold for High Rate Check", min_value
 
 # Process files and get vendor list after upload
 if uploaded_files or gdrive_url:
-    prefix_data, vendor_names, high_rate_prefixes = process_csv_data(uploaded_files, gdrive_url, rate_threshold)
+    prefix_data, vendor_names, high_rate_prefixes, file_summaries = process_csv_data(uploaded_files, gdrive_url, rate_threshold)
     
     # Display pre-execution summary
     st.subheader("Pre-Execution Summary")
-    st.write(f"Total prefixes with rates above ${rate_threshold}: {len(high_rate_prefixes)}")
+    for summary in file_summaries:
+        st.write(f"File: {summary['filename']}")
+        st.write(f" - Total Prefix Count: {summary['total_prefix_count']}")
+        st.write(f" - Rates Above ${rate_threshold}: {summary['high_rate_count']}")
 
     selected_vendor = st.selectbox("Select Base Vendor Name (for filtering):", vendor_names)
 
@@ -202,9 +217,8 @@ if uploaded_files or gdrive_url:
         ]
         df_main = pd.DataFrame(results, columns=columns)
 
-        high_rate_columns = columns  # Use the same columns for high-rate data
-
         # Create DataFrame for high-rate prefixes with placeholders where needed
+        high_rate_columns = columns
         df_high_rates = pd.DataFrame(
             [(prefix, row.get("Description", ""), 
               row.get("Rate (inter, vendor's currency)", ""),
@@ -213,10 +227,8 @@ if uploaded_files or gdrive_url:
               "", "", "",  # Placeholder for LCR costs if not computed for high-rate prefixes
               row.get("Vendor's currency", ""),
               row.get("Billing scheme", ""),
-              filename,  # Source file
-              filename,  # Source file
-              filename)  # Source file
-             for prefix, row in high_rate_prefixes],
+              source_file, source_file, source_file)  # Source file from high-rate data
+             for prefix, row, source_file in high_rate_prefixes],
             columns=high_rate_columns
         )
 
