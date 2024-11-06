@@ -121,6 +121,7 @@ st.title("Telecall - CSV Rate Aggregator v13.0")
 
 # Display required headers
 st.write("**Please ensure the uploaded files include the following headers in this order for optimal processing:**")
+st.write(Each file ** vendorname.zip ** or all zipped one big file with each vendorname.zip)
 st.write("Prefix, Description, Rate (inter, vendor's currency), Rate (intra, vendor's currency), Rate (vendor's currency), Vendor's currency, Billing scheme")
 
 uploaded_files = st.file_uploader("Upload CSV or ZIP files (no Dropbox support)", type=["csv", "zip"], accept_multiple_files=True)
