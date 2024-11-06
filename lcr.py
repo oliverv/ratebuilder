@@ -190,92 +190,101 @@ if uploaded_files or gdrive_url:
         st.write(f" - Rates Above ${rate_threshold}: {summary['high_rate_count']}")
 
     selected_vendor = st.selectbox("Select Base Vendor Name (for filtering):", vendor_names)
+# Button to execute processing after selecting the vendor
+if st.button("Execute"):
+    results = []
+    for prefix, data in prefix_data.items():
+        if selected_vendor:
+            # Calculate averages
+            avg_inter_vendor = calculate_average_rate([rate if isinstance(rate, float) else rate[0] for rate in data["inter_vendor_rates"]])
+            avg_intra_vendor = calculate_average_rate([rate for rate, _ in data["intra_vendor_rates"]])
+            avg_vendor = calculate_average_rate([rate for rate, _ in data["vendor_rates"]])
 
-    # Button to execute processing after selecting the vendor
-    if st.button("Execute"):
-        results = []
-        for prefix, data in prefix_data.items():
-            if selected_vendor:
-                avg_inter_vendor = calculate_average_rate([rate if isinstance(rate, float) else rate[0] for rate in data["inter_vendor_rates"]])
-                #avg_inter_vendor = calculate_average_rate([rate if isinstance(rate, float) else rate[0] for rate in data["inter_vendor_rates"]])
-                avg_intra_vendor = calculate_average_rate([rate for rate, _ in data["intra_vendor_rates"]])
-                avg_vendor = calculate_average_rate([rate for rate, _ in data["vendor_rates"]])
+            # Calculate LCR costs
+            lcr_inter_vendor = calculate_lcr_cost([rate for rate, _ in data["inter_vendor_rates"]], lcr_n)
+            lcr_intra_vendor = calculate_lcr_cost([rate for rate, _ in data["intra_vendor_rates"]], lcr_n)
+            lcr_vendor = calculate_lcr_cost([rate for rate, _ in data["vendor_rates"]], lcr_n)
 
-                lcr_inter_vendor = calculate_lcr_cost([rate for rate, _ in data["inter_vendor_rates"]], lcr_n)
-                lcr_intra_vendor = calculate_lcr_cost([rate for rate, _ in data["intra_vendor_rates"]], lcr_n)
-                lcr_vendor = calculate_lcr_cost([rate for rate, _ in data["vendor_rates"]], lcr_n)
+            # Capture file names for each rate category from LCR calculations
+            inter_vendor_file = data["inter_vendor_rates"][lcr_n - 1][1] if len(data["inter_vendor_rates"]) >= lcr_n else ""
+            intra_vendor_file = data["intra_vendor_rates"][lcr_n - 1][1] if len(data["intra_vendor_rates"]) >= lcr_n else ""
+            vendor_file = data["vendor_rates"][lcr_n - 1][1] if len(data["vendor_rates"]) >= lcr_n else ""
 
-                # Capture file names for each rate category from LCR calculations
-                inter_vendor_file = data["inter_vendor_rates"][lcr_n - 1][1] if len(data["inter_vendor_rates"]) >= lcr_n else ""
-                intra_vendor_file = data["intra_vendor_rates"][lcr_n - 1][1] if len(data["intra_vendor_rates"]) >= lcr_n else ""
-                vendor_file = data["vendor_rates"][lcr_n - 1][1] if len(data["vendor_rates"]) >= lcr_n else ""
+            results.append([
+                prefix,
+                data["description"],
+                f"{avg_inter_vendor:.{decimal_places}f}",
+                f"{avg_intra_vendor:.{decimal_places}f}",
+                f"{avg_vendor:.{decimal_places}f}",
+                f"{lcr_inter_vendor:.{decimal_places}f}",
+                f"{lcr_intra_vendor:.{decimal_places}f}",
+                f"{lcr_vendor:.{decimal_places}f}",
+                data["currency"],
+                data["billing_scheme"],
+                inter_vendor_file,  # Source file for inter-vendor rate
+                intra_vendor_file,  # Source file for intra-vendor rate
+                vendor_file         # Source file for vendor rate
+            ])
 
-                results.append([
-                    prefix,
-                    data["description"],
-                    f"{avg_inter_vendor:.{decimal_places}f}",
-                    f"{avg_intra_vendor:.{decimal_places}f}",
-                    f"{avg_vendor:.{decimal_places}f}",
-                    f"{lcr_inter_vendor:.{decimal_places}f}",
-                    f"{lcr_intra_vendor:.{decimal_places}f}",
-                    f"{lcr_vendor:.{decimal_places}f}",
-                    data["currency"],
-                    data["billing_scheme"],
-                    inter_vendor_file,  # Source file for inter-vendor rate
-                    intra_vendor_file,  # Source file for intra-vendor rate
-                    vendor_file         # Source file for vendor rate
-                ])
+    # Create DataFrame for main results
+    columns = [
+        "Prefix", "Description",
+        "Average Rate (inter, vendor's currency)",
+        "Average Rate (intra, vendor's currency)",
+        "Average Rate (vendor's currency)",
+        "LCR Cost (inter, vendor's currency)",
+        "LCR Cost (intra, vendor's currency)",
+        "LCR Cost (vendor's currency)",
+        "Vendor's currency",
+        "Billing scheme",
+        "Inter Vendor Source File",
+        "Intra Vendor Source File",
+        "Vendor Source File"
+    ]
+    df_main = pd.DataFrame(results, columns=columns)
 
-        # Create DataFrame for results
-        columns = [
-            "Prefix", "Description",
-            "Average Rate (inter, vendor's currency)",
-            "Average Rate (intra, vendor's currency)",
-            "Average Rate (vendor's currency)",
-            "LCR Cost (inter, vendor's currency)",
-            "LCR Cost (intra, vendor's currency)",
-            "LCR Cost (vendor's currency)",
-            "Vendor's currency",
-            "Billing scheme",
-            "Inter Vendor Source File",
-            "Intra Vendor Source File",
-            "Vendor Source File"
-        ]
-        df_main = pd.DataFrame(results, columns=columns)
+    # Define columns for high-rate prefixes DataFrame
+    high_rate_columns = columns
 
-        # Create DataFrame for high-rate prefixes with placeholders where needed
-        high_rate_columns = columns
-        df_high_rates = pd.DataFrame(
-            [(prefix, row.get("Description", ""), 
-              row.get("Rate (inter, vendor's currency)", ""),
-              row.get("Rate (intra, vendor's currency)", ""),
-              row.get("Rate (vendor's currency)", ""),
-              "", "", "",  # Placeholder for LCR costs if not computed for high-rate prefixes
-              row.get("Vendor's currency", ""),
-              row.get("Billing scheme", ""),
-              source_file, source_file, source_file)  # Source file from high-rate data
-             for prefix, row, source_file in high_rate_prefixes],
-            columns=high_rate_columns
-        )
+    # Create DataFrame for high-rate prefixes with placeholders for LCR costs and source file
+    df_high_rates = pd.DataFrame(
+        [
+            (
+                prefix,
+                row.get("Description", ""),
+                row.get("Rate (inter, vendor's currency)", ""),
+                row.get("Rate (intra, vendor's currency)", ""),
+                row.get("Rate (vendor's currency)", ""),
+                "", "", "",  # Placeholders for LCR costs
+                row.get("Vendor's currency", ""),
+                row.get("Billing scheme", ""),
+                filename,  # Inter Vendor Source File
+                filename,  # Intra Vendor Source File
+                filename   # Vendor Source File
+            )
+            for prefix, row, filename in high_rate_prefixes
+        ],
+        columns=high_rate_columns
+    )
 
-        # Display and download main LCR results
-        st.subheader("Combined Average and LCR Cost Summary (Rates <= Threshold)")
-        st.dataframe(df_main)
-        csv_main = df_main.to_csv(index=False, float_format=f"%.{final_decimal_places}f")
-        st.download_button(
-            label="Download Main LCR Results as CSV",
-            data=csv_main,
-            file_name='main_lcr_results.csv',
-            mime='text/csv',
-        )
+    # Display and download main LCR results
+    st.subheader("Combined Average and LCR Cost Summary (Rates <= Threshold)")
+    st.dataframe(df_main)
+    csv_main = df_main.to_csv(index=False, float_format=f"%.{final_decimal_places}f")
+    st.download_button(
+        label="Download Main LCR Results as CSV",
+        data=csv_main,
+        file_name='main_lcr_results.csv',
+        mime='text/csv',
+    )
 
-        # Display and download high-rate prefixes
-        st.subheader("Prefixes with Rates Above Threshold")
-        st.dataframe(df_high_rates)
-        csv_high_rates = df_high_rates.to_csv(index=False, float_format=f"%.{final_decimal_places}f")
-        st.download_button(
-            label="Download High-Rate Prefixes as CSV",
-            data=csv_high_rates,
-            file_name='high_rate_prefixes.csv',
-            mime='text/csv',
-        )
+    # Display and download high-rate prefixes
+    st.subheader("Prefixes with Rates Above Threshold")
+    st.dataframe(df_high_rates)
+    csv_high_rates = df_high_rates.to_csv(index=False, float_format=f"%.{final_decimal_places}f")
+    st.download_button(
+        label="Download High-Rate Prefixes as CSV",
+        data=csv_high_rates,
+        file_name='high_rate_prefixes.csv',
+        mime='text/csv',
+    )
