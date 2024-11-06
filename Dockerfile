@@ -19,8 +19,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code into the container
 COPY . .
 
+# Copy entrypoint script into the container
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Expose the port that Streamlit will run on
 EXPOSE 8080
 
-# Command to run the Streamlit app
-CMD ["streamlit", "run", "telecall_rate_builder3.py", "--server.port=8080", "--server.headless=true"]
+# Command to run the entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]
