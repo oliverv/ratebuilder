@@ -28,42 +28,10 @@ def calculate_lcr_cost(rates, n):
         return rates[n - 1]
     return 0.0
 
-def process_csv_data_old(uploaded_files, gdrive_url, rate_threshold=1.0):
-    """Processes CSV data to extract vendor names, prepare data structure, and check for high rates."""
-    prefix_data = defaultdict(lambda: {
-        "inter_vendor_rates": [],
-        "intra_vendor_rates": [],
-        "vendor_rates": [],
-        "description": None,
-        "currency": None,
-        "billing_scheme": None
-    })
-    vendor_names = set()
-    high_rate_prefixes = []  # Store prefixes with any rate above the threshold
-    file_summaries = []  # Store total prefix count and high-rate count per file
-
-    # Gather files from uploaded files and Google Drive
-    all_files = []
-    if uploaded_files:
-        all_files.extend([(f, f.name) for f in uploaded_files])
-    if gdrive_url:
-        all_files.extend([(download_from_google_drive(gdrive_url)[0], "gdrive_file.zip")])
-    # Process each file
-    for file, filename in all_files:
-        prefix_count = set()  # Track unique prefixes per file
-        high_rate_count = [0]  # Initialize high-rate count as a list to avoid TypeError
-
-        # Process the file
-        vendor_names.update(process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count))
-
-        # Append the results for summary display
-        file_summaries.append({
-            "filename": filename,
-            "total_prefix_count": len(prefix_count),
-            "high_rate_count": high_rate_count[0]  # Access the final count from the list
-        })
-    
-    return prefix_data, sorted(vendor_names), high_rate_prefixes, file_summaries
+import zipfile
+import io
+import csv
+from collections import defaultdict
 
 def process_csv_data(uploaded_files, gdrive_url, rate_threshold=1.0):
     """Processes CSV data to extract vendor names, prepare data structure, and check for high rates."""
@@ -127,48 +95,8 @@ def process_csv_data(uploaded_files, gdrive_url, rate_threshold=1.0):
     return prefix_data, sorted(vendor_names), high_rate_prefixes, file_summaries
 
 def process_individual_csv(file, prefix_data, high_rate_prefixes, rate_threshold, prefix_count, high_rate_count):
-    vendor_names = set()
-    try:
-        file_text = file.read().decode('utf-8')
-    except UnicodeDecodeError:
-        file_text = file.read().decode('latin-1')
-    reader = csv.DictReader(file_text.splitlines())
-
-    for row in reader:
-        prefix = row["Prefix"]
-        prefix_count.add(prefix)  # Track unique prefixes
-
-        data = prefix_data[prefix]
-        high_rate_found = False
-
-        # Check for high rates
-        for rate_key in ["Rate (inter, vendor's currency)", "Rate (intra, vendor's currency)", "Rate (vendor's currency)"]:
-            rate_value = row.get(rate_key, "").strip()
-            if rate_value:
-                try:
-                    rate_value_float = float(rate_value)
-                    if rate_value_float > rate_threshold:
-                        high_rate_found = True
-                except ValueError:
-                    pass
-
-        if high_rate_found:
-            high_rate_prefixes.append(prefix)
-            high_rate_count[0] += 1
-
-        # Store each rate as a tuple (rate, None) if filename is not needed
-        if row.get("Rate (inter, vendor's currency)"):
-            data["inter_vendor_rates"].append((row.get("Rate (inter, vendor's currency)"), None))
-        if row.get("Rate (intra, vendor's currency)"):
-            data["intra_vendor_rates"].append((row.get("Rate (intra, vendor's currency)"), None))
-        if row.get("Rate (vendor's currency)"):
-            data["vendor_rates"].append((row.get("Rate (vendor's currency)"), None))
-
-    return vendor_names
-    
-def processOLD_individual_csv(file, prefix_data, high_rate_prefixes, rate_threshold, prefix_count, high_rate_count):
     """Processes a single CSV file to detect high rates and update counts."""
-    vendor_names = set()
+    vendor_names = set()  # Track unique vendor names for filtering
     try:
         file_text = file.read().decode('utf-8')
     except UnicodeDecodeError:
@@ -178,7 +106,8 @@ def processOLD_individual_csv(file, prefix_data, high_rate_prefixes, rate_thresh
     for row in reader:
         vendor_name = row.get("Vendor", "").strip()
         if vendor_name:
-            vendor_names.add(vendor_name)
+            vendor_names.add(vendor_name)  # Add vendor name if it exists
+
         prefix = row["Prefix"]
         prefix_count.add(prefix)  # Track unique prefixes
 
@@ -200,72 +129,19 @@ def processOLD_individual_csv(file, prefix_data, high_rate_prefixes, rate_thresh
             high_rate_prefixes.append(prefix)  # Add prefix to high rates list
             high_rate_count[0] += 1  # Increment high rate count
 
-        # Add rates to prefix data if they exist
+        # Store each rate as a tuple (rate, None) if filename is not needed
         if row.get("Rate (inter, vendor's currency)"):
-            data["inter_vendor_rates"].append(row.get("Rate (inter, vendor's currency)"))
+            data["inter_vendor_rates"].append((row.get("Rate (inter, vendor's currency)"), None))
         if row.get("Rate (intra, vendor's currency)"):
-            data["intra_vendor_rates"].append(row.get("Rate (intra, vendor's currency)"))
+            data["intra_vendor_rates"].append((row.get("Rate (intra, vendor's currency)"), None))
         if row.get("Rate (vendor's currency)"):
-            data["vendor_rates"].append(row.get("Rate (vendor's currency)"))
+            data["vendor_rates"].append((row.get("Rate (vendor's currency)"), None))
 
         # Process metadata fields
         data["description"] = data.get("description") or row.get("Description")
         data["currency"] = data.get("currency") or row.get("Vendor's currency")
         data["billing_scheme"] = data.get("billing_scheme") or row.get("Billing scheme")
 
-    return vendor_names
-    
-
-def process_file_old(file, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count):
-    """Processes a single CSV file, adds high-rate prefixes to a separate list, and returns unique vendor names."""
-    vendor_names = set()
-    try:
-        file_text = file.read().decode('utf-8')
-    except UnicodeDecodeError:
-        file_text = file.read().decode('latin-1')
-    reader = csv.DictReader(file_text.splitlines())
-    for row in reader:
-        vendor_name = row.get("Vendor", "").strip()
-        if vendor_name:
-            vendor_names.add(vendor_name)
-        prefix = row["Prefix"]
-        prefix_count.add(prefix)  # Track unique prefixes
-
-        data = prefix_data[prefix]
-
-        # Check each rate type and log if it exceeds the threshold
-        high_rate_found = False
-        for rate_key in ["Rate (inter, vendor's currency)", "Rate (intra, vendor's currency)", "Rate (vendor's currency)"]:
-            rate_value = row.get(rate_key, "").strip()
-            if rate_value:
-                try:
-                    rate_value_float = float(rate_value)
-                    if rate_value_float > rate_threshold:
-                        st.write(f"High rate detected in file {filename}: Prefix {prefix}, Rate {rate_value} in column {rate_key}")
-                        high_rate_found = True
-                except ValueError:
-                    st.write(f"Warning: Non-numeric rate found in file {filename}: Prefix {prefix}, Rate {rate_value} in column {rate_key}")
-
-        if high_rate_found:
-            high_rate_prefixes.append((prefix, row, filename))  # Include filename with high-rate prefix
-            high_rate_count[0] += 1  # Update the count directly in the list
-            continue  # Skip adding this prefix to main prefix_data for LCR calculation
-
-        # Add rates and file names to respective lists if they exist
-        inter_vendor_rate = row.get("Rate (inter, vendor's currency)", "")
-        intra_vendor_rate = row.get("Rate (intra, vendor's currency)", "")
-        vendor_rate = row.get("Rate (vendor's currency)", "")
-        if inter_vendor_rate:
-            data["inter_vendor_rates"].append((inter_vendor_rate, filename))
-        if intra_vendor_rate:
-            data["intra_vendor_rates"].append((intra_vendor_rate, filename))
-        if vendor_rate:
-            data["vendor_rates"].append((vendor_rate, filename))
-
-        # Process metadata fields
-        data["description"] = data.get("description") or row.get("Description")
-        data["currency"] = data.get("currency") or row.get("Vendor's currency")
-        data["billing_scheme"] = data.get("billing_scheme") or row.get("Billing scheme")
     return vendor_names
     
 def download_from_google_drive(url):
