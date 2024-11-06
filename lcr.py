@@ -106,7 +106,7 @@ def process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename
 
         if high_rate_found:
             high_rate_prefixes.append((prefix, row, filename))  # Include filename with high-rate prefix
-            high_rate_count += 1
+            high_rate_count[0] += 1  # Update the count directly in the list
             continue  # Skip adding this prefix to main prefix_data for LCR calculation
 
         # Add rates and file names to respective lists if they exist
@@ -126,51 +126,6 @@ def process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename
         data["billing_scheme"] = data.get("billing_scheme") or row.get("Billing scheme")
     return vendor_names
     
-def process_file_old (file, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count):
-    """Processes a single CSV file, adds high-rate prefixes to a separate list, and returns unique vendor names."""
-    vendor_names = set()
-    try:
-        file_text = file.read().decode('utf-8')
-    except UnicodeDecodeError:
-        file_text = file.read().decode('latin-1')
-    reader = csv.DictReader(file_text.splitlines())
-    for row in reader:
-        vendor_name = row.get("Vendor", "").strip()
-        if vendor_name:
-            vendor_names.add(vendor_name)
-        prefix = row["Prefix"]
-        prefix_count.add(prefix)  # Track unique prefixes
-
-        data = prefix_data[prefix]
-
-        # Check each rate type and add prefix to high_rate_prefixes if any rate is above the threshold
-        high_rate_found = False
-        for rate_key in ["Rate (inter, vendor's currency)", "Rate (intra, vendor's currency)", "Rate (vendor's currency)"]:
-            rate_value = row.get(rate_key, "")
-            if rate_value and float(rate_value) > rate_threshold:
-                high_rate_found = True
-        if high_rate_found:
-            high_rate_prefixes.append((prefix, row, filename))  # Include filename with high-rate prefix
-            high_rate_count += 1
-            continue  # Skip adding this prefix to main prefix_data for LCR calculation
-
-        # Add rates and file names to respective lists if they exist
-        inter_vendor_rate = row.get("Rate (inter, vendor's currency)", "")
-        intra_vendor_rate = row.get("Rate (intra, vendor's currency)", "")
-        vendor_rate = row.get("Rate (vendor's currency)", "")
-        if inter_vendor_rate:
-            data["inter_vendor_rates"].append((inter_vendor_rate, filename))
-        if intra_vendor_rate:
-            data["intra_vendor_rates"].append((intra_vendor_rate, filename))
-        if vendor_rate:
-            data["vendor_rates"].append((vendor_rate, filename))
-
-        # Process metadata fields
-        data["description"] = data.get("description") or row.get("Description")
-        data["currency"] = data.get("currency") or row.get("Vendor's currency")
-        data["billing_scheme"] = data.get("billing_scheme") or row.get("Billing scheme")
-    return vendor_names
-
 def download_from_google_drive(url):
     try:
         response = requests.get(url, stream=True)
