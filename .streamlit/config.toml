@@ -2,7 +2,7 @@
 
 maxUploadSize = 1024 
 enableWebsocketCompression = true
-server.maxMessageSize = 200  # Max message size in MB
+maxMessageSize = 200  # Max message size in MB
 
 [browser]
 gatherUsageStats = true
