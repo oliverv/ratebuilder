@@ -287,7 +287,7 @@ def download_from_google_drive(url):
 # Display Logo and Title
 logo = Image.open("logo.png")  # Ensure logo.png is in the working directory
 st.image(logo, width=200)
-st.title("Telecall - CSV Rate Aggregator Rev10")
+st.title("Telecall - CSV Rate Aggregator Rev11")
 
 uploaded_files = st.file_uploader(
     "Upload CSV or ZIP files (no Dropbox support)",
