@@ -127,6 +127,46 @@ def process_csv_data(uploaded_files, gdrive_url, rate_threshold=1.0):
     return prefix_data, sorted(vendor_names), high_rate_prefixes, file_summaries
 
 def process_individual_csv(file, prefix_data, high_rate_prefixes, rate_threshold, prefix_count, high_rate_count):
+    vendor_names = set()
+    try:
+        file_text = file.read().decode('utf-8')
+    except UnicodeDecodeError:
+        file_text = file.read().decode('latin-1')
+    reader = csv.DictReader(file_text.splitlines())
+
+    for row in reader:
+        prefix = row["Prefix"]
+        prefix_count.add(prefix)  # Track unique prefixes
+
+        data = prefix_data[prefix]
+        high_rate_found = False
+
+        # Check for high rates
+        for rate_key in ["Rate (inter, vendor's currency)", "Rate (intra, vendor's currency)", "Rate (vendor's currency)"]:
+            rate_value = row.get(rate_key, "").strip()
+            if rate_value:
+                try:
+                    rate_value_float = float(rate_value)
+                    if rate_value_float > rate_threshold:
+                        high_rate_found = True
+                except ValueError:
+                    pass
+
+        if high_rate_found:
+            high_rate_prefixes.append(prefix)
+            high_rate_count[0] += 1
+
+        # Store each rate as a tuple (rate, None) if filename is not needed
+        if row.get("Rate (inter, vendor's currency)"):
+            data["inter_vendor_rates"].append((row.get("Rate (inter, vendor's currency)"), None))
+        if row.get("Rate (intra, vendor's currency)"):
+            data["intra_vendor_rates"].append((row.get("Rate (intra, vendor's currency)"), None))
+        if row.get("Rate (vendor's currency)"):
+            data["vendor_rates"].append((row.get("Rate (vendor's currency)"), None))
+
+    return vendor_names
+    
+def processOLD_individual_csv(file, prefix_data, high_rate_prefixes, rate_threshold, prefix_count, high_rate_count):
     """Processes a single CSV file to detect high rates and update counts."""
     vendor_names = set()
     try:
@@ -280,7 +320,7 @@ if uploaded_files or gdrive_url:
         results = []
         for prefix, data in prefix_data.items():
             if selected_vendor:
-                avg_inter_vendor = calculate_average_rate([rate for rate, _ in data["inter_vendor_rates"]])
+                avg_inter_vendor = calculate_average_rate([rate if isinstance(rate, float) else rate[0] for rate in data["inter_vendor_rates"]])
                 avg_intra_vendor = calculate_average_rate([rate for rate, _ in data["intra_vendor_rates"]])
                 avg_vendor = calculate_average_rate([rate for rate, _ in data["vendor_rates"]])
 
