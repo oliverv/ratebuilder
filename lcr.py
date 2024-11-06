@@ -28,6 +28,43 @@ def calculate_lcr_cost(rates, n):
         return rates[n - 1]
     return 0.0
 
+def process_csv_data_old(uploaded_files, gdrive_url, rate_threshold=1.0):
+    """Processes CSV data to extract vendor names, prepare data structure, and check for high rates."""
+    prefix_data = defaultdict(lambda: {
+        "inter_vendor_rates": [],
+        "intra_vendor_rates": [],
+        "vendor_rates": [],
+        "description": None,
+        "currency": None,
+        "billing_scheme": None
+    })
+    vendor_names = set()
+    high_rate_prefixes = []  # Store prefixes with any rate above the threshold
+    file_summaries = []  # Store total prefix count and high-rate count per file
+
+    # Gather files from uploaded files and Google Drive
+    all_files = []
+    if uploaded_files:
+        all_files.extend([(f, f.name) for f in uploaded_files])
+    if gdrive_url:
+        all_files.extend([(download_from_google_drive(gdrive_url)[0], "gdrive_file.zip")])
+    # Process each file
+    for file, filename in all_files:
+        prefix_count = set()  # Track unique prefixes per file
+        high_rate_count = [0]  # Initialize high-rate count as a list to avoid TypeError
+
+        # Process the file
+        vendor_names.update(process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count))
+
+        # Append the results for summary display
+        file_summaries.append({
+            "filename": filename,
+            "total_prefix_count": len(prefix_count),
+            "high_rate_count": high_rate_count[0]  # Access the final count from the list
+        })
+    
+    return prefix_data, sorted(vendor_names), high_rate_prefixes, file_summaries
+
 def process_csv_data(uploaded_files, gdrive_url, rate_threshold=1.0):
     """Processes CSV data to extract vendor names, prepare data structure, and check for high rates."""
     prefix_data = defaultdict(lambda: {
@@ -48,33 +85,98 @@ def process_csv_data(uploaded_files, gdrive_url, rate_threshold=1.0):
         all_files.extend([(f, f.name) for f in uploaded_files])
     if gdrive_url:
         all_files.extend([(download_from_google_drive(gdrive_url)[0], "gdrive_file.zip")])
-# Check if file is a ZIP and process each CSV inside
-if filename.endswith('.zip'):
-    with zipfile.ZipFile(io.BytesIO(file_contents), 'r') as z:
-        for inner_filename in z.namelist():
-            if inner_filename.endswith('.csv'):
-                with z.open(inner_filename) as f:
-                    total_prefix_count, high_rate_count = process_individual_csv(
-                        f, prefix_data, high_rate_prefixes, rate_threshold, total_prefix_count, high_rate_count
-                    )
+
     # Process each file
     for file, filename in all_files:
-        prefix_count = set()  # Track unique prefixes per file
-        high_rate_count = [0]  # Initialize high-rate count as a list to avoid TypeError
+        if isinstance(file, io.BytesIO):
+            file_contents = file.getvalue()
+        else:
+            file_contents = file.read()
 
-        # Process the file
-        vendor_names.update(process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count))
-
-        # Append the results for summary display
-        file_summaries.append({
-            "filename": filename,
-            "total_prefix_count": len(prefix_count),
-            "high_rate_count": high_rate_count[0]  # Access the final count from the list
-        })
+        # Check if the file is a ZIP and process each CSV inside
+        if filename.endswith('.zip'):
+            with zipfile.ZipFile(io.BytesIO(file_contents), 'r') as z:
+                for inner_filename in z.namelist():
+                    if inner_filename.endswith('.csv'):
+                        with z.open(inner_filename) as f:
+                            prefix_count = set()  # Track unique prefixes per CSV
+                            high_rate_count = [0]  # Track high-rate count as a list to avoid TypeError
+                            vendor_names.update(process_individual_csv(
+                                f, prefix_data, high_rate_prefixes, rate_threshold, prefix_count, high_rate_count
+                            ))
+                            # Append summary for each CSV inside the ZIP
+                            file_summaries.append({
+                                "filename": inner_filename,
+                                "total_prefix_count": len(prefix_count),
+                                "high_rate_count": high_rate_count[0]
+                            })
+        # Process regular CSV files directly
+        elif filename.endswith('.csv'):
+            prefix_count = set()  # Track unique prefixes per file
+            high_rate_count = [0]  # Initialize high-rate count as a list to avoid TypeError
+            vendor_names.update(process_individual_csv(
+                file, prefix_data, high_rate_prefixes, rate_threshold, prefix_count, high_rate_count
+            ))
+            # Append summary for each standalone CSV
+            file_summaries.append({
+                "filename": filename,
+                "total_prefix_count": len(prefix_count),
+                "high_rate_count": high_rate_count[0]
+            })
     
     return prefix_data, sorted(vendor_names), high_rate_prefixes, file_summaries
+
+def process_individual_csv(file, prefix_data, high_rate_prefixes, rate_threshold, prefix_count, high_rate_count):
+    """Processes a single CSV file to detect high rates and update counts."""
+    vendor_names = set()
+    try:
+        file_text = file.read().decode('utf-8')
+    except UnicodeDecodeError:
+        file_text = file.read().decode('latin-1')
+    reader = csv.DictReader(file_text.splitlines())
+
+    for row in reader:
+        vendor_name = row.get("Vendor", "").strip()
+        if vendor_name:
+            vendor_names.add(vendor_name)
+        prefix = row["Prefix"]
+        prefix_count.add(prefix)  # Track unique prefixes
+
+        data = prefix_data[prefix]
+        high_rate_found = False
+
+        # Check for high rates
+        for rate_key in ["Rate (inter, vendor's currency)", "Rate (intra, vendor's currency)", "Rate (vendor's currency)"]:
+            rate_value = row.get(rate_key, "").strip()
+            if rate_value:
+                try:
+                    rate_value_float = float(rate_value)
+                    if rate_value_float > rate_threshold:
+                        high_rate_found = True
+                except ValueError:
+                    pass
+
+        if high_rate_found:
+            high_rate_prefixes.append(prefix)  # Add prefix to high rates list
+            high_rate_count[0] += 1  # Increment high rate count
+
+        # Add rates to prefix data if they exist
+        if row.get("Rate (inter, vendor's currency)"):
+            data["inter_vendor_rates"].append(row.get("Rate (inter, vendor's currency)"))
+        if row.get("Rate (intra, vendor's currency)"):
+            data["intra_vendor_rates"].append(row.get("Rate (intra, vendor's currency)"))
+        if row.get("Rate (vendor's currency)"):
+            data["vendor_rates"].append(row.get("Rate (vendor's currency)"))
+
+        # Process metadata fields
+        data["description"] = data.get("description") or row.get("Description")
+        data["currency"] = data.get("currency") or row.get("Vendor's currency")
+        data["billing_scheme"] = data.get("billing_scheme") or row.get("Billing scheme")
+
+    return vendor_names
     
-def process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count):
+
+def process_file_old(file, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count):
     """Processes a single CSV file, adds high-rate prefixes to a separate list, and returns unique vendor names."""
     vendor_names = set()
     try:
