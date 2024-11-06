@@ -28,7 +28,7 @@ def calculate_lcr_cost(rates, n):
         return rates[n - 1]
     return 0.0
 
-def process_csv_data(uploaded_files, dropbox_url, gdrive_url):
+def process_csv_data(uploaded_files, gdrive_url):
     """Processes CSV data to extract vendor names and prepare data structure."""
     prefix_data = defaultdict(lambda: {
         "inter_vendor_rates": [],
@@ -44,8 +44,6 @@ def process_csv_data(uploaded_files, dropbox_url, gdrive_url):
     all_files = []
     if uploaded_files:
         all_files.extend([(f, f.name) for f in uploaded_files])
-    if dropbox_url:
-        all_files.extend([(download_from_dropbox(dropbox_url)[0], "dropbox_file.zip")])
     if gdrive_url:
         all_files.extend([(download_from_google_drive(gdrive_url)[0], "gdrive_file.zip")])
 
@@ -98,56 +96,48 @@ def process_file(file, prefix_data):
         data["billing_scheme"] = data.get("billing_scheme") or row.get("Billing scheme")
     return vendor_names
 
-def download_from_dropbox(url):
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        return [io.BytesIO(response.content)]
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error downloading from Dropbox: {e}")
-        return []
-
 def download_from_google_drive(url):
     try:
-        response = requests.get(url)
+        response = requests.get(url, stream=True)
         response.raise_for_status()
-        return [io.BytesIO(response.content)]
+
+        file_data = io.BytesIO()
+        for chunk in response.iter_content(chunk_size=1048576):  # 1 MB chunks
+            file_data.write(chunk)
+        file_data.seek(0)
+        return [file_data]
     except requests.exceptions.RequestException as e:
         st.error(f"Error downloading from Google Drive: {e}")
         return []
 
 # --- Streamlit App ---
 
-# Logo Display
-# Logo Display
-logo = Image.open("logo.jpg")  # Replace with the actual path to your logo
+# Display Logo and Title
+logo = Image.open("logo.png")  # Ensure logo.png is in the working directory
 st.image(logo, width=200)
-
-st.title("Telecall CSV Rate Aggregator with Dynamic Vendor Selection and LCR Cost Calculation")
+st.title("Telecall - CSV Rate Aggregator")
 
 uploaded_files = st.file_uploader(
-    "Upload CSV or ZIP files (or provide links below)",
+    "Upload CSV or ZIP files (no Dropbox support)",
     type=["csv", "zip"],
     accept_multiple_files=True
 )
 
-dropbox_url = st.text_input("Dropbox Shared Link:")
 gdrive_url = st.text_input("Google Drive URL:")
 
-lcr_n = st.number_input("LCR level (e.g., 4 for LCR4)", min_value=1, value=4)
+lcr_n = st.number_input("LCR Level (e.g., 4 for LCR4)", min_value=1, value=4)
 decimal_places = st.number_input("Decimal Places for Display", min_value=0, value=6)
 final_decimal_places = st.number_input("Decimal Places for Final Export", min_value=0, value=6)
 
 # Process files and get vendor list after upload
-if uploaded_files or dropbox_url or gdrive_url:
-    prefix_data, vendor_names = process_csv_data(uploaded_files, dropbox_url, gdrive_url)
+if uploaded_files or gdrive_url:
+    prefix_data, vendor_names = process_csv_data(uploaded_files, gdrive_url)
     selected_vendor = st.selectbox("Select Base Vendor Name (for filtering):", vendor_names)
 
     # Button to execute processing after selecting the vendor
     if st.button("Execute"):
         results = []
         for prefix, data in prefix_data.items():
-            # Filter by selected vendor and calculate averages and LCR costs
             if selected_vendor:
                 avg_inter_vendor = calculate_average_rate(data["inter_vendor_rates"])
                 avg_intra_vendor = calculate_average_rate(data["intra_vendor_rates"])
@@ -184,7 +174,10 @@ if uploaded_files or dropbox_url or gdrive_url:
         ]
         df = pd.DataFrame(results, columns=columns)
 
-        # Display results in Streamlit
+        # Display Average Prefix Summary and Results
+        st.subheader("Average Prefix Summary")
+        st.dataframe(df[["Prefix", "Average Rate (inter, vendor's currency)", "Average Rate (intra, vendor's currency)", "Average Rate (vendor's currency)"]])
+
         st.subheader("Combined Average and LCR Cost Summary")
         st.dataframe(df)
 
@@ -196,4 +189,3 @@ if uploaded_files or dropbox_url or gdrive_url:
             file_name='combined_average_lcr_cost_summary.csv',
             mime='text/csv',
         )
-        
