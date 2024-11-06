@@ -247,39 +247,41 @@ if st.button("Execute"):
     high_rate_columns = columns
 
     # Create DataFrame for high-rate prefixes with placeholders for LCR costs and source file
-    df_high_rates = pd.DataFrame(
-        [
-            (
-                prefix,
-                row.get("Description", ""),
-                row.get("Rate (inter, vendor's currency)", ""),
-                row.get("Rate (intra, vendor's currency)", ""),
-                row.get("Rate (vendor's currency)", ""),
-                "", "", "",  # Placeholders for LCR costs
-                row.get("Vendor's currency", ""),
-                row.get("Billing scheme", ""),
-                filename if len(entry) > 2 else "",  # Inter Vendor Source File
-                filename if len(entry) > 2 else "",  # Intra Vendor Source File
-                filename if len(entry) > 2 else ""   # Vendor Source File
-             )
-             for entry in high_rate_prefixes
-             for prefix, row, *filename in [entry]  # 
-        ],
-        columns=[
-            "Prefix", "Description",
-             "Rate (inter, vendor's currency)",
-             "Rate (intra, vendor's currency)",
-             "Rate (vendor's currency)",
-             "LCR Cost (inter, vendor's currency)",
-             "LCR Cost (intra, vendor's currency)",
-             "LCR Cost (vendor's currency)",
-             "Vendor's currency",
-             "Billing scheme",
-             "Inter Vendor Source File",
-             "Intra Vendor Source File",
-             "Vendor Source File"
-         ]
-    )
+   # Ensure high_rate_prefixes has entries in (prefix, row_dict, filename) format
+# Create DataFrame for high-rate prefixes with placeholders for LCR costs and source file
+df_high_rates = pd.DataFrame(
+    [
+        (
+            prefix,
+            row.get("Description", "") if isinstance(row, dict) else "",  # Safeguard row access
+            row.get("Rate (inter, vendor's currency)", "") if isinstance(row, dict) else "",
+            row.get("Rate (intra, vendor's currency)", "") if isinstance(row, dict) else "",
+            row.get("Rate (vendor's currency)", "") if isinstance(row, dict) else "",
+            "", "", "",  # Placeholders for LCR costs if not computed for high-rate prefixes
+            row.get("Vendor's currency", "") if isinstance(row, dict) else "",
+            row.get("Billing scheme", "") if isinstance(row, dict) else "",
+            filename if len(entry) > 2 else "",  # Inter Vendor Source File
+            filename if len(entry) > 2 else "",  # Intra Vendor Source File
+            filename if len(entry) > 2 else ""   # Vendor Source File
+        )
+        for entry in high_rate_prefixes
+        for prefix, row, *filename in [entry]  # Unpack with optional filename
+    ],
+    columns=[
+        "Prefix", "Description",
+        "Rate (inter, vendor's currency)",
+        "Rate (intra, vendor's currency)",
+        "Rate (vendor's currency)",
+        "LCR Cost (inter, vendor's currency)",
+        "LCR Cost (intra, vendor's currency)",
+        "LCR Cost (vendor's currency)",
+        "Vendor's currency",
+        "Billing scheme",
+        "Inter Vendor Source File",
+        "Intra Vendor Source File",
+        "Vendor Source File"
+    ]
+)
     # Display and download main LCR results
     st.subheader("Combined Average and LCR Cost Summary (Rates <= Threshold)")
     st.dataframe(df_main)
