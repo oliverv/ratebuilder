@@ -23,4 +23,4 @@ COPY . .
 EXPOSE 8080
 
 # Command to run the Streamlit app
-CMD ["streamlit", "run", "telecall_rate_builder1.py", "--server.port=8080", "--server.headless=true"]
+CMD ["streamlit", "run", "telecall_rate_builder3.py", "--server.port=8080", "--server.headless=true"]
