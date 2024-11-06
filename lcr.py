@@ -48,7 +48,15 @@ def process_csv_data(uploaded_files, gdrive_url, rate_threshold=1.0):
         all_files.extend([(f, f.name) for f in uploaded_files])
     if gdrive_url:
         all_files.extend([(download_from_google_drive(gdrive_url)[0], "gdrive_file.zip")])
-
+# Check if file is a ZIP and process each CSV inside
+if filename.endswith('.zip'):
+    with zipfile.ZipFile(io.BytesIO(file_contents), 'r') as z:
+        for inner_filename in z.namelist():
+            if inner_filename.endswith('.csv'):
+                with z.open(inner_filename) as f:
+                    total_prefix_count, high_rate_count = process_individual_csv(
+                        f, prefix_data, high_rate_prefixes, rate_threshold, total_prefix_count, high_rate_count
+                    )
     # Process each file
     for file, filename in all_files:
         prefix_count = set()  # Track unique prefixes per file
