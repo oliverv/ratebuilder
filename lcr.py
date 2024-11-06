@@ -258,15 +258,28 @@ if st.button("Execute"):
                 "", "", "",  # Placeholders for LCR costs
                 row.get("Vendor's currency", ""),
                 row.get("Billing scheme", ""),
-                filename,  # Inter Vendor Source File
-                filename,  # Intra Vendor Source File
-                filename   # Vendor Source File
-            )
-            for prefix, row, filename in high_rate_prefixes
+                filename if len(entry) > 2 else "",  # Inter Vendor Source File
+                filename if len(entry) > 2 else "",  # Intra Vendor Source File
+                filename if len(entry) > 2 else ""   # Vendor Source File
+             )
+             for entry in high_rate_prefixes
+             for prefix, row, *filename in [entry]  # 
         ],
-        columns=high_rate_columns
+        columns=[
+            "Prefix", "Description",
+             "Rate (inter, vendor's currency)",
+             "Rate (intra, vendor's currency)",
+             "Rate (vendor's currency)",
+             "LCR Cost (inter, vendor's currency)",
+             "LCR Cost (intra, vendor's currency)",
+             "LCR Cost (vendor's currency)",
+             "Vendor's currency",
+             "Billing scheme",
+             "Inter Vendor Source File",
+             "Intra Vendor Source File",
+             "Vendor Source File"
+         ]
     )
-
     # Display and download main LCR results
     st.subheader("Combined Average and LCR Cost Summary (Rates <= Threshold)")
     st.dataframe(df_main)
