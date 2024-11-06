@@ -82,11 +82,11 @@ def process_csv_data(uploaded_files, gdrive_url, rate_threshold=1.0):
             ))
             # Append summary for each standalone CSV
             file_summaries.append({
-                "filename": filename,
+                "filename": inner_filename.replace('.csv', ''),
                 "total_prefix_count": len(prefix_count),
                 "high_rate_count": high_rate_count[0]
-            })
-    
+           })
+           
     return prefix_data, sorted(vendor_names), high_rate_prefixes, file_summaries
 
 def process_individual_csv(file, prefix_data, high_rate_prefixes, rate_threshold, prefix_count, high_rate_count, filename):
@@ -183,7 +183,8 @@ if uploaded_files or gdrive_url:
         st.write(f"File: {summary['filename']}")
         st.write(f" - Total Prefix Count: {summary['total_prefix_count']}")
         st.write(f" - Rates Above ${rate_threshold}: {summary['high_rate_count']}")
-
+#        st.write(f"Processing prefix: {prefix} with vendor: {selected_vendor}")
+        
     selected_vendor = st.selectbox("Select Base Vendor Name (for filtering):", vendor_names)
     
     # Button to execute processing after selecting the vendor
