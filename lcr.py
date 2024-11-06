@@ -42,38 +42,30 @@ def process_csv_data(uploaded_files, gdrive_url, rate_threshold=1.0):
     high_rate_prefixes = []  # Store prefixes with any rate above the threshold
     file_summaries = []  # Store total prefix count and high-rate count per file
 
+    # Gather files from uploaded files and Google Drive
     all_files = []
     if uploaded_files:
         all_files.extend([(f, f.name) for f in uploaded_files])
     if gdrive_url:
         all_files.extend([(download_from_google_drive(gdrive_url)[0], "gdrive_file.zip")])
 
+    # Process each file
     for file, filename in all_files:
         prefix_count = set()  # Track unique prefixes per file
-        high_rate_count = 0  # Track high-rate count per file
+        high_rate_count = [0]  # Initialize high-rate count as a list to avoid TypeError
 
-        if isinstance(file, io.BytesIO):
-            file_contents = file.getvalue()
-        else:
-            file_contents = file.read()
+        # Process the file
+        vendor_names.update(process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count))
 
-        if filename.endswith('.zip'):
-            with zipfile.ZipFile(io.BytesIO(file_contents), 'r') as z:
-                for inner_filename in z.namelist():
-                    if inner_filename.endswith('.csv'):
-                        with z.open(inner_filename) as f:
-                            vendor_names.update(process_file(f, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count))
-        elif filename.endswith('.csv'):
-            vendor_names.update(process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count))
-
+        # Append the results for summary display
         file_summaries.append({
             "filename": filename,
             "total_prefix_count": len(prefix_count),
-            "high_rate_count": high_rate_count
+            "high_rate_count": high_rate_count[0]  # Access the final count from the list
         })
-
+    
     return prefix_data, sorted(vendor_names), high_rate_prefixes, file_summaries
-
+    
 def process_file(file, prefix_data, high_rate_prefixes, rate_threshold, filename, prefix_count, high_rate_count):
     """Processes a single CSV file, adds high-rate prefixes to a separate list, and returns unique vendor names."""
     vendor_names = set()
