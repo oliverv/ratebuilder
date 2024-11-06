@@ -163,7 +163,7 @@ def download_from_google_drive(url):
 # Display Logo and Title
 logo = Image.open("logo.png")  # Ensure logo.png is in the working directory
 st.image(logo, width=200)
-st.title("Telecall - CSV Rate Aggregator Rev11")
+st.title("Telecall - CSV Rate Aggregator Rev13")
 
 uploaded_files = st.file_uploader(
     "Upload CSV or ZIP files (no Dropbox support)",
@@ -190,6 +190,7 @@ if uploaded_files or gdrive_url:
         st.write(f" - Rates Above ${rate_threshold}: {summary['high_rate_count']}")
 
     selected_vendor = st.selectbox("Select Base Vendor Name (for filtering):", vendor_names)
+# Button to execute processing after selecting the vendor
 # Button to execute processing after selecting the vendor
 if st.button("Execute"):
     results = []
@@ -247,41 +248,27 @@ if st.button("Execute"):
     high_rate_columns = columns
 
     # Create DataFrame for high-rate prefixes with placeholders for LCR costs and source file
-   # Ensure high_rate_prefixes has entries in (prefix, row_dict, filename) format
-# Create DataFrame for high-rate prefixes with placeholders for LCR costs and source file
-df_high_rates = pd.DataFrame(
-    [
-        (
-            prefix,
-            row.get("Description", "") if isinstance(row, dict) else "",  # Safeguard row access
-            row.get("Rate (inter, vendor's currency)", "") if isinstance(row, dict) else "",
-            row.get("Rate (intra, vendor's currency)", "") if isinstance(row, dict) else "",
-            row.get("Rate (vendor's currency)", "") if isinstance(row, dict) else "",
-            "", "", "",  # Placeholders for LCR costs if not computed for high-rate prefixes
-            row.get("Vendor's currency", "") if isinstance(row, dict) else "",
-            row.get("Billing scheme", "") if isinstance(row, dict) else "",
-            filename if len(entry) > 2 else "",  # Inter Vendor Source File
-            filename if len(entry) > 2 else "",  # Intra Vendor Source File
-            filename if len(entry) > 2 else ""   # Vendor Source File
-        )
-        for entry in high_rate_prefixes
-        for prefix, row, *filename in [entry]  # Unpack with optional filename
-    ],
-    columns=[
-        "Prefix", "Description",
-        "Rate (inter, vendor's currency)",
-        "Rate (intra, vendor's currency)",
-        "Rate (vendor's currency)",
-        "LCR Cost (inter, vendor's currency)",
-        "LCR Cost (intra, vendor's currency)",
-        "LCR Cost (vendor's currency)",
-        "Vendor's currency",
-        "Billing scheme",
-        "Inter Vendor Source File",
-        "Intra Vendor Source File",
-        "Vendor Source File"
-    ]
-)
+    df_high_rates = pd.DataFrame(
+        [
+            (
+                prefix,
+                row.get("Description", "") if isinstance(row, dict) else "",  # Safeguard row access
+                row.get("Rate (inter, vendor's currency)", "") if isinstance(row, dict) else "",
+                row.get("Rate (intra, vendor's currency)", "") if isinstance(row, dict) else "",
+                row.get("Rate (vendor's currency)", "") if isinstance(row, dict) else "",
+                "", "", "",  # Placeholders for LCR costs if not computed for high-rate prefixes
+                row.get("Vendor's currency", "") if isinstance(row, dict) else "",
+                row.get("Billing scheme", "") if isinstance(row, dict) else "",
+                filename if len(entry) > 2 else "",  # Inter Vendor Source File
+                filename if len(entry) > 2 else "",  # Intra Vendor Source File
+                filename if len(entry) > 2 else ""   # Vendor Source File
+            )
+            for entry in high_rate_prefixes
+            for prefix, row, *filename in [entry]  # Unpack with optional filename
+        ],
+        columns=high_rate_columns
+    )
+
     # Display and download main LCR results
     st.subheader("Combined Average and LCR Cost Summary (Rates <= Threshold)")
     st.dataframe(df_main)
