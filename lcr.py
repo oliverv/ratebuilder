@@ -202,38 +202,23 @@ if uploaded_files or gdrive_url:
         ]
         df_main = pd.DataFrame(results, columns=columns)
 
-        high_rate_columns = [
-            "Prefix", "Description",
-            "Average Rate (inter, vendor's currency)",
-            "Average Rate (intra, vendor's currency)",
-            "Average Rate (vendor's currency)",
-             "LCR Cost (inter, vendor's currency)",
-             "LCR Cost (intra, vendor's currency)",
-             "LCR Cost (vendor's currency)",
-             "Vendor's currency",
-             "Billing scheme",
-             "Inter Vendor Source File",
-             "Intra Vendor Source File",
-             "Vendor Source File"
-        ]
+        high_rate_columns = columns  # Use the same columns for high-rate data
 
-# Create DataFrame for high-rate prefixes with placeholders where needed
+        # Create DataFrame for high-rate prefixes with placeholders where needed
         df_high_rates = pd.DataFrame(
-        [(prefix, row.get("Description", ""), 
-        row.get("Rate (inter, vendor's currency)", ""),
-        row.get("Rate (intra, vendor's currency)", ""),
-        row.get("Rate (vendor's currency)", ""),
-        "", "", "",  # Placeholder for LCR costs if not computed for high-rate prefixes
-        row.get("Vendor's currency", ""),
-        row.get("Billing scheme", ""),
-        "Source File Example",  # Placeholder or actual file name if available
-        "Source File Example",  # Placeholder or actual file name if available
-        "Source File Example")  # Placeholder or actual file name if available
-        for prefix, row in high_rate_prefixes],
-        columns=high_rate_columns
+            [(prefix, row.get("Description", ""), 
+              row.get("Rate (inter, vendor's currency)", ""),
+              row.get("Rate (intra, vendor's currency)", ""),
+              row.get("Rate (vendor's currency)", ""),
+              "", "", "",  # Placeholder for LCR costs if not computed for high-rate prefixes
+              row.get("Vendor's currency", ""),
+              row.get("Billing scheme", ""),
+              filename,  # Source file
+              filename,  # Source file
+              filename)  # Source file
+             for prefix, row in high_rate_prefixes],
+            columns=high_rate_columns
         )
-
-# --- Rest of your code for displaying and exporting df_high_rates ---
 
         # Display and download main LCR results
         st.subheader("Combined Average and LCR Cost Summary (Rates <= Threshold)")
