@@ -7,10 +7,6 @@ server.maxMessageSize = 200  # Max message size in MB
 [browser]
 gatherUsageStats = true
 
-[cache]
-max_entries = 100  # Number of items in the cache
-ttl = 90   # Cache expiration in seconds (10 minutes)
-
 [runner]
 magicEnabled = false
 
