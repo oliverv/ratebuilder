@@ -197,6 +197,7 @@ if uploaded_files or gdrive_url:
         for prefix, data in prefix_data.items():
             if selected_vendor:
                 avg_inter_vendor = calculate_average_rate([rate if isinstance(rate, float) else rate[0] for rate in data["inter_vendor_rates"]])
+                #avg_inter_vendor = calculate_average_rate([rate if isinstance(rate, float) else rate[0] for rate in data["inter_vendor_rates"]])
                 avg_intra_vendor = calculate_average_rate([rate for rate, _ in data["intra_vendor_rates"]])
                 avg_vendor = calculate_average_rate([rate for rate, _ in data["vendor_rates"]])
 
