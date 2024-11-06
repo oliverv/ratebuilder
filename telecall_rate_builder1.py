@@ -123,13 +123,6 @@ st.title("Telecall - CSV Rate Aggregator v13.0")
 st.write("**Please ensure the uploaded files include the following headers in this order for optimal processing:**")
 st.write("Prefix, Description, Rate (inter, vendor's currency), Rate (intra, vendor's currency), Rate (vendor's currency), Vendor's currency, Billing scheme")
 
-# File uploader
-uploaded_files = st.file_uploader(
-    "Upload CSV or ZIP files (no Dropbox support)",
-    type=["csv", "zip"],
-    accept_multiple_files=True
-)
-
 uploaded_files = st.file_uploader("Upload CSV or ZIP files (no Dropbox support)", type=["csv", "zip"], accept_multiple_files=True)
 gdrive_url = st.text_input("Google Drive URL:")
 lcr_n = st.number_input("LCR Level (e.g., 4 for LCR4)", min_value=1, value=4)
