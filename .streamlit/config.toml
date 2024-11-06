@@ -2,13 +2,23 @@
 
 maxUploadSize = 1024 
 enableWebsocketCompression = true
+server.maxMessageSize = 200  # Max message size in MB
 
 [browser]
-gatherUsageStats = false
+gatherUsageStats = true
+
+[cache]
+max_entries = 100  # Number of items in the cache
+ttl = 90   # Cache expiration in seconds (10 minutes)
+
+[runner]
+magicEnabled = false
 
 [theme]
-primaryColor = "#FF6347"  # Example color (tomato red)
-backgroundColor = "#F0F0F0"
+primaryColor = "#1e88e5"
+backgroundColor = "#f0f2f6"
+#primaryColor = "#FF6347"  # Example color (tomato red)
+#backgroundColor = "#F0F0F0"
 secondaryBackgroundColor = "#FFFFFF"
 textColor = "#000000"
 font = "sans serif"
