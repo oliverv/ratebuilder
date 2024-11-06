@@ -86,8 +86,8 @@ def process_individual_csv(file, prefix_data, high_rate_prefixes, rate_threshold
         for rate_key in ["Rate (inter, vendor's currency)", "Rate (intra, vendor's currency)", "Rate (vendor's currency)"]:
             rate_value = row.get(rate_key, "").strip()
             if rate_value and float(rate_value) > rate_threshold:
-                high_rate_found = True
-
+               high_rate_found = True
+               print("High rate detected for prefix:", prefix)
         if high_rate_found:
             high_rate_prefixes.append((prefix, row, filename))
             high_rate_count[0] += 1
