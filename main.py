@@ -2,6 +2,9 @@ import streamlit as st
 import subprocess
 
 # Display a menu to select which app to run
+logo = Image.open("logo.png")
+st.image(logo, width=50)
+
 st.title("Application Menu")
 
 option = st.selectbox("Choose an application to launch:", ("telecall_rate_builder", "checker" , "upload" , "streamlit_app"))
