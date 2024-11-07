@@ -27,4 +27,4 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 EXPOSE 8080
 
 # Start supervisord to run Nginx and multiple Streamlit apps
-CMD ["/usr/bin/supervisord"]
+#CMD ["/usr/bin/supervisord"]
