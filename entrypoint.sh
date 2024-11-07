@@ -5,8 +5,8 @@ service nginx start
 
 # Start each Streamlit app on a different port
 streamlit run telecall_rate_builder.py --server.port=8080 &
-streamlit run check.py --server.port=8502 &
-streamlit run upload.py --server.port=8503 &
+#streamlit run check.py --server.port=8502 &
+#streamlit run upload.py --server.port=8503 &
 
 # Keep the container running
 tail -f /dev/null
