@@ -1,5 +1,8 @@
 import streamlit as st
 import subprocess
+from PIL import Image
+
+
 
 # Display a menu to select which app to run
 logo = Image.open("logo.png")
