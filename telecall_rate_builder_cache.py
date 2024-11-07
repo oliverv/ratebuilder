@@ -20,7 +20,6 @@ def prefix_data_factory():
 
 @st.cache_data
 def process_csv_data(uploaded_files, gdrive_url, rate_threshold=1.0):
-    # Use prefix_data_factory for the default dictionary values
     prefix_data = defaultdict(prefix_data_factory)
     vendor_names = set()
     high_rate_prefixes = []
@@ -78,8 +77,8 @@ def process_individual_csv(file, prefix_data, high_rate_prefixes, rate_threshold
         for rate_key in ["Rate (inter, vendor's currency)", "Rate (intra, vendor's currency)", "Rate (vendor's currency)"]:
             rate_value = row.get(rate_key, "").strip()
             if rate_value and float(rate_value) > rate_threshold:
-               high_rate_found = True
-               print("High rate detected for prefix:", prefix)
+                high_rate_found = True
+                print("High rate detected for prefix:", prefix)
         if high_rate_found:
             high_rate_prefixes.append((prefix, row, filename))
             high_rate_count[0] += 1
@@ -96,8 +95,6 @@ def process_individual_csv(file, prefix_data, high_rate_prefixes, rate_threshold
         data["billing_scheme"] = data.get("billing_scheme") or row.get("Billing scheme")
 
     return vendor_names
-
-# --- Functions ---
 
 def calculate_average_rate(rates):
     rates = [float(rate) for rate in rates if str(rate).strip() and float(rate) >= 0.0]
