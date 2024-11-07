@@ -7,16 +7,7 @@ import requests
 import io
 from PIL import Image
 
-# --- Functions ---
-
-def calculate_average_rate(rates):
-    rates = [float(rate) for rate in rates if str(rate).strip() and float(rate) >= 0.0]
-    return round(sum(rates) / len(rates), 6) if rates else 0.0
-
-def calculate_lcr_cost(rates, n):
-    rates = sorted([float(rate) for rate in rates if str(rate).strip() and float(rate) >= 0.0])
-    return rates[n - 1] if len(rates) >= n else (rates[-1] if rates else 0.0)
-
+# Define prefix_data_factory globally
 def prefix_data_factory():
     return {
         "inter_vendor_rates": [],
@@ -29,6 +20,7 @@ def prefix_data_factory():
 
 @st.cache_data
 def process_csv_data(uploaded_files, gdrive_url, rate_threshold=1.0):
+    # Use prefix_data_factory for the default dictionary values
     prefix_data = defaultdict(prefix_data_factory)
     vendor_names = set()
     high_rate_prefixes = []
@@ -104,6 +96,16 @@ def process_individual_csv(file, prefix_data, high_rate_prefixes, rate_threshold
         data["billing_scheme"] = data.get("billing_scheme") or row.get("Billing scheme")
 
     return vendor_names
+
+# --- Functions ---
+
+def calculate_average_rate(rates):
+    rates = [float(rate) for rate in rates if str(rate).strip() and float(rate) >= 0.0]
+    return round(sum(rates) / len(rates), 6) if rates else 0.0
+
+def calculate_lcr_cost(rates, n):
+    rates = sorted([float(rate) for rate in rates if str(rate).strip() and float(rate) >= 0.0])
+    return rates[n - 1] if len(rates) >= n else (rates[-1] if rates else 0.0)
 
 def download_from_google_drive(url):
     try:
