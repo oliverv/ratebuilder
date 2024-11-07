@@ -31,7 +31,7 @@ RUN chmod +x /entrypoint.sh
 EXPOSE 8080
 
 # Command to run the Streamlit app
-CMD ["streamlit", "run", "telecall_rate_builder3.py", "--server.port=8080", "--server.headless=true"]
+CMD ["streamlit", "run", "telecall_rate_builder.py", "--server.port=8080", "--server.headless=true"]
 # Command to run the entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
 # Start supervisord to run Nginx and multiple Streamlit apps
