@@ -23,8 +23,16 @@ RUN apt-get update && apt-get install -y nginx supervisor && \
 COPY nginx.conf /etc/nginx/sites-enabled/default
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Expose Nginx port
+# Copy entrypoint script into the container
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Expose the port that Streamlit will run on
 EXPOSE 8080
 
+# Command to run the Streamlit app
+CMD ["streamlit", "run", "telecall_rate_builder3.py", "--server.port=8080", "--server.headless=true"]
+# Command to run the entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]
 # Start supervisord to run Nginx and multiple Streamlit apps
 #CMD ["/usr/bin/supervisord"]
