@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN apt-get update && apt-get install -y nginx
 
 # Copy Nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx/sites-enabled/nginx.conf
 
 # Expose the port for Nginx (e.g., 8080 for public access)
 EXPOSE 8080
