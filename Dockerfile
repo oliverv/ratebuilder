@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y nginx supervisor && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy Nginx and supervisord configuration
-COPY nginx.conf /etc/nginx/sites-enabled/nginx.conf
+COPY nginx.conf /etc/nginx/sites-enabled/default
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Expose Nginx port
