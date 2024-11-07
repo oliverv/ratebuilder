@@ -2,7 +2,7 @@
 FROM python:3.11
 
 # Set Streamlit-specific environment variables
-#ENV STREAMLIT_SERVER_PORT=8080
+ENV STREAMLIT_SERVER_PORT=8080
 ENV STREAMLIT_SERVER_HEADLESS=true
 
 # Set the working directory in the container
