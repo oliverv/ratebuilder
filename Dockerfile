@@ -2,7 +2,7 @@
 FROM python:3.11
 
 # Set Streamlit-specific environment variables
-ENV STREAMLIT_SERVER_PORT=8080
+ENV STREAMLIT_SERVER_PORT=8501
 ENV STREAMLIT_SERVER_HEADLESS=true
 
 # Set the working directory in the container
@@ -15,16 +15,15 @@ COPY .streamlit/config.toml .streamlit/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update
+RUN apt-get install nginx
 
 # Copy the rest of the application code into the container
 COPY . .
 
-# Copy entrypoint script into the container
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Expose the Streamlit default port
+EXPOSE 8501
 
-# Expose the port that Streamlit will run on
-EXPOSE 8080
+# Command to run the Streamlit app
+CMD ["streamlit", "run", "menu_app.py"]
 
-# Command to run the entrypoint script
-ENTRYPOINT ["/entrypoint.sh"]
