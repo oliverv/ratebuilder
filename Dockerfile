@@ -28,5 +28,5 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Expose the port for Nginx (e.g., 8080 for public access)
 EXPOSE 8080
 
-# Start Nginx alongside Streamlit
-CMD service nginx start && streamlit run app_switcher.py --server.port=8501
+# Start Nginx and Streamlit together
+CMD sh -c "service nginx start && streamlit run app_switcher.py --server.port=8501"
