@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Start Nginx
-#service nginx start
+service nginx start
 
 # Start each Streamlit app on a different port
 streamlit run telecall_rate_builder.py --server.port=8080 &
