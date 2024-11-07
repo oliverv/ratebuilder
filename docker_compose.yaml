@@ -1,0 +1,9 @@
+version: '3'
+services:
+  streamlit_app:
+    image: rate_telecall_apps
+    ports:
+      - "8080:8500"  # Maps public 8080 to container's 8500 where Nginx is running
+    environment:
+      - STREAMLIT_SERVER_PORT=8500  # Optional, since you're running with Nginx on 8500
+    command: ["service", "nginx", "start", "&&", "streamlit", "run", "app_switcher.py", "--server.port=8500"]
