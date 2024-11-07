@@ -22,5 +22,5 @@ option = st.selectbox("Choose an application to launch:", list(options.keys()))
 # Run the selected application
 if st.button("Launch Application"):
     selected_app = options[option]
-    subprocess.Popen(["streamlit", "run", selected_app, "--server.port=8081"])
+    subprocess.Popen(["streamlit", "run", selected_app, "--server.port=8080"])
     st.write(f"Launching {option}... Refresh the page to reset.")
