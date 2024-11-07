@@ -8,12 +8,15 @@ st.title("Application Switcher")
 
 st.write("Select an application below to open it in a new tab:")
 
+# Retrieve the current host's base URL to make links flexible
+base_url = f"{st.experimental_get_query_params().get('base_url', [''])[0] or 'https://ratebuilder.oliverv.dev'}"
+
 # Create buttons to launch each application
 if st.button("Telecall Rate Builder"):
-    st.markdown("[Open Telecall Rate Builder](http://localhost:8080/app1/)", unsafe_allow_html=True)
+    st.markdown(f"[Open Telecall Rate Builder]({base_url}/app1/)", unsafe_allow_html=True)
 
 if st.button("Checker"):
-    st.markdown("[Open Checker](http://localhost:8080/app2/)", unsafe_allow_html=True)
+    st.markdown(f"[Open Checker]({base_url}/app2/)", unsafe_allow_html=True)
 
 if st.button("Uploader"):
-    st.markdown("[Open Uploader](http://localhost:8080/app3/)", unsafe_allow_html=True)
+    st.markdown(f"[Open Uploader]({base_url}/app3/)", unsafe_allow_html=True)
