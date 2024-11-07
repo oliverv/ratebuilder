@@ -6,7 +6,7 @@ services:
     ports:
       - "8081:8081"  # Publicly maps port 8080 on the host to Nginx in the container
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf  # Mounts custom Nginx config
+      - ./nginx.conf:/etc/nginx/sites-enabled/default  # Mounts custom Nginx config
     depends_on:
       - app1
       - app2
