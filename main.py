@@ -15,17 +15,17 @@ option = st.selectbox("Choose an application to launch:", ("telecall_rate_builde
 # Run the selected application
 if st.button("Launch Application"):
     if option == "telecall_rate_builder":
-        subprocess.Popen(["streamlit", "run", "telecall_rate_builder.py", "--server.port=8080"])
+        subprocess.Popen(["streamlit", "run", "telecall_rate_builder.py", "--server.port=8081"])
     if option == "checker":
-        subprocess.Popen(["streamlit", "run", "check.py", "--server.port=8080"])
+        subprocess.Popen(["streamlit", "run", "check.py", "--server.port=8081"])
     st.write(f"Launching {option}... Refresh the page to reset.")
     if option == "upload":
-        subprocess.Popen(["streamlit", "run", "upload.py", "--server.port=8080"])
+        subprocess.Popen(["streamlit", "run", "upload.py", "--server.port=8081"])
     st.write(f"Launching {option}... Refresh the page to reset.")
     if option == "streamlit_app":
-        subprocess.Popen(["streamlit", "run", "streamlit_app.py", "--server.port=8080"])
+        subprocess.Popen(["streamlit", "run", "streamlit_app.py", "--server.port=8081"])
     st.write(f"Launching {option}... Refresh the page to reset.")
     elif option == "telecall_rate_builder_old":
-        subprocess.Popen(["streamlit", "run", "telecall_rate_builder_old.py", "--server.port=8080"])
+        subprocess.Popen(["streamlit", "run", "telecall_rate_builder_old.py", "--server.port=8081"])
     st.write(f"Launching {option}... Refresh the page to reset.")
     
